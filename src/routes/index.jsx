@@ -7,6 +7,7 @@ import AuthedRoute from "./components/AuthedRoute";
 import ClientErrorPage from "@/components/status/ClientErrorPage";
 import ServerErrorPage from "@/components/status/ServerErrorPage";
 import MaintenancePage from "@/components/status/MaintenancePage";
+import Plans from "@/components/shop/Plans";
 
 const router = createBrowserRouter([
     {
@@ -28,6 +29,10 @@ const router = createBrowserRouter([
                 <Home />
             </ProtectedRoute>
         ),
+    },
+    {
+        path: "/plans",
+        element: <Plans />,
     },
     {
         path: "/error",

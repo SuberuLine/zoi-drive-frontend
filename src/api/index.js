@@ -25,7 +25,7 @@ instance.interceptors.request.use((config) => {
 
 export const checkLogin = async () => {
     try {
-        const result = await instance.get("/auth/check");
+        const result = await instance.get("/user/check");
         console.log("checkToken:", result.data.code);
         if (localStorage.getItem("token") && result.data.code === 200) {
             return true;
@@ -60,6 +60,18 @@ export const logout = async () => {
 
 export const getUserInfo = () => {
     return instance.get("/user/info");
+};
+
+export const getQRCode = () => {
+    return instance.get("/auth/getLoginQrCodeUrl");
+};
+
+export const uploadFile = (file) => {
+    return instance.post("/upload", file);
+};
+
+export const checkIn = () => {
+    return instance.get("/user/checkin");
 };
 
 export const http = (method, url, data) => {

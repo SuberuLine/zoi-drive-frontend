@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Navigate } from "react-router-dom";
 import { checkLogin } from "@/api";
-import Loading from '@/components/status/Loading'; // 假设您有一个Loading组件
+import Loading from '@/components/status/Loading';
 
 const ProtectedRoute = ({ children }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(null);
-
     useEffect(() => {
         const verifyAuth = async () => {
             try {
