@@ -1,6 +1,6 @@
-import { Space, Progress } from "antd";
+import { Progress } from "antd";
 
-const StorageProgress = ({ used, total, style }) => {
+const StorageProgress = ({ used, total, position, size="small", type="percentage" }) => {
 
     const enoughtColors = {
         '0%': '#108ee9',
@@ -8,13 +8,13 @@ const StorageProgress = ({ used, total, style }) => {
     };
 
     const alertColors = {
-        '0%': '#ffe650',
-        '100%': '#ffba50',
+        '0%': '#f5be9e',
+        '100%': '#ffc',
     };
 
     const notEnoughtColors = {
-        '0%': '#FB6D6D',
-        '100%': '#F51E1E',
+        '0%': '#ffccf4',
+        '100%': '#cccfff',
     };
 
     const switchColors = (percentage) => {
@@ -27,27 +27,29 @@ const StorageProgress = ({ used, total, style }) => {
         }
     };
 
+    const percentage = Math.round((used / total) * 100);
 
-    const percentage = (used / total) * 100;
-
-    return (
-        <Space
-            direction="vertical"
-            size={0}
-            style={{ minWidth: "200px", ...style }}
-        >
+    if (type === 'percentage') {
+        return (
             <Progress
                 percent={percentage}
                 status="active"
-                size="small"
+                size={size}
                 strokeColor={switchColors(percentage)}
-                percentPosition={{
-                    align: 'center',
-                    type: 'outer'
-                }}
-                format={() => `${used}GB / ${total}GB`}
+                percentPosition={position}
+                format={() => `${used}MB / ${total}MB`}
             />
-        </Space>
+        );
+    } 
+
+    return (
+        <Progress
+            percent={used}
+            status="active"
+            size={size}
+            strokeColor={switchColors(percentage)}
+            percentPosition={position}
+        />
     );
 };
 
