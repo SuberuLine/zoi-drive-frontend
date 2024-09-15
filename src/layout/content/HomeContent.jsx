@@ -27,6 +27,8 @@ const { Content } = Layout;
 const { Title } = Typography;
 
 export default function HomeContent() {
+    const [messageApi, contextHolder] = message.useMessage();
+
     const { isChecked, setCheckinToday, setTodaysReward, todaysReward } = useUserStore(
         (state) => ({
             isChecked: state.isChecked,
@@ -106,15 +108,17 @@ export default function HomeContent() {
                 setCheckinToday(true);
                 const reward = Number(res.data.data.split('M')[0]);
                 setTodaysReward(reward);
-                message.success(res.data.message);
+                messageApi.success(res.data.message);
             } else {
-                message.error(res.data.message);
+                messageApi.error(res.data.message);
             }
         });
     };
 
     return (
-        <Layout style={{ padding: "24px" }}>
+        <>
+            {contextHolder}
+            <Layout style={{ padding: "24px" }}>
             <Content>
                 <Title level={2}>Welcome to Your Cloud Drive</Title>
                 <Row gutter={[16, 16]}>
@@ -213,5 +217,6 @@ export default function HomeContent() {
                 </Row>
             </Content>
         </Layout>
+        </>
     );
 }

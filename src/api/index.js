@@ -52,6 +52,18 @@ export const login = (account, password, remember) => {
     });
 };
 
+export const register = (username, email, password) => {
+    return instance.post("/auth/register", {
+        username,
+        password,
+        email,
+    }, {
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+};
+
 export const logout = async () => {
     const result = await instance.post("/auth/logout");
     console.log("logout:", result.data.code);
