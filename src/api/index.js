@@ -64,6 +64,21 @@ export const register = (username, email, password) => {
     });
 };
 
+export const sendResetEmail = (email) => {
+    return instance.get("/auth/sendResetEmail?email=" + email);
+};
+
+export const resetPassword = (token, password) => {
+    return instance.post("/auth/resetPassword", {
+        token,
+        password,
+    }, {
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+};
+
 export const logout = async () => {
     const result = await instance.post("/auth/logout");
     console.log("logout:", result.data.code);

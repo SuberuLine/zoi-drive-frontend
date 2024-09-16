@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { register } from "@/api";
 
 const RegisterForm = ({ toggleView, messageApi }) => {
@@ -8,28 +8,6 @@ const RegisterForm = ({ toggleView, messageApi }) => {
         password: "",
         confirmPassword: ""
     });
-    const [cooldown, setCooldown] = useState(0);
-
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setRegisterForm(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
-
-    const sendVerificationCode = () => {
-        var reg = /^[0-9a-zA-Z_.-]+[@][0-9a-zA-Z_.-]+([.][a-zA-Z]+){1,2}$/;
-        if (reg.test(registerForm.email)) {
-            setCooldown(60);
-            // 这里添加发送验证码的逻辑
-        } else {
-            messageApi.open({
-                type: 'error',
-                content: '邮箱格式不正确',
-            });
-        }
-    };
 
     const handleRegister = (e) => {
         e.preventDefault();
@@ -64,14 +42,6 @@ const RegisterForm = ({ toggleView, messageApi }) => {
             }
         });
     };
-
-    useEffect(() => {
-        let timer;
-        if (cooldown > 0) {
-            timer = setInterval(() => setCooldown((c) => c - 1), 1000);
-        }
-        return () => clearInterval(timer);
-    }, [cooldown]);
 
     return (
         <>

@@ -8,6 +8,7 @@ import ClientErrorPage from "@/components/status/ClientErrorPage";
 import ServerErrorPage from "@/components/status/ServerErrorPage";
 import MaintenancePage from "@/components/status/MaintenancePage";
 import Plans from "@/components/shop/Plans";
+import ResetPassword from "@/components/login/ResetPassword";
 
 const router = createBrowserRouter([
     {
@@ -23,12 +24,16 @@ const router = createBrowserRouter([
         ),
     },
     {
+        path: "/reset_password",
+        element: <ResetPassword />,
+    },
+    {
         path: "/home",
         element: (
             <ProtectedRoute>
                 <Home />
             </ProtectedRoute>
-        ),
+        )
     },
     {
         path: "/plans",
