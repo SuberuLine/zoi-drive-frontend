@@ -1,11 +1,18 @@
+import logo from "@/assets/icon/icon.png";
+
 const Index = () => {
     return (
         <div className="flex flex-col h-screen">
             <nav className="bg-white shadow-lg">
                 <div className="md:flex items-center justify-between py-2 px-8 md:px-12">
                     <div className="flex justify-between items-center">
-                        <div className="text-2xl font-bold text-gray-800 md:text-3xl">
-                            <a href="#">MyDrive</a>
+                        
+                        <a href="#">
+                            <img src={logo} alt="logo" className="w-12 h-18 mt-2" />
+                        </a>
+
+                        <div className="text-2xl font-blod text-gray-800 md:text-3xl mt-1 ml-4">
+                            <a href="#" >Zoi-Drive</a>
                         </div>
                         <div className="md:hidden">
                             <button

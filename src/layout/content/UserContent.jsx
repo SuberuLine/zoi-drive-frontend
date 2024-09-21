@@ -37,7 +37,7 @@ function PersonalPage() {
         username: userInfo.username,
         name: "user",
         email: userInfo.email,
-        avatar: "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png",
+        avatar: userInfo.avatar,
         memberLevel: "Gold",
         usedSpace: userInfo.userDetail.usedStorage,
         totalSpace: userInfo.userDetail.totalStorage,
@@ -70,7 +70,8 @@ function PersonalPage() {
                     <Col span={8}>
                         <Card>
                             <div style={{ textAlign: "center" }}>
-                                <Avatar size={100} src={user.avatar} />
+                                {user.avatar ? <Avatar size={100} src={user.avatar} /> : 
+                                <Avatar size={100} icon={<UserOutlined />} />}
                                 <Title level={2} style={{ marginTop: 16 }}>
                                     {user.name}
                                     <Tag color="gold" style={{ marginLeft: 8 }}>
