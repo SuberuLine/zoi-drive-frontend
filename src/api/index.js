@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const instance = axios.create({
-    baseURL: "http://localhost:9088/api",
+    baseURL: import.meta.env.VITE_API_URL + "/api",
     timeout: 10000,
 });
 
@@ -99,6 +99,18 @@ export const uploadFile = (file) => {
 
 export const checkIn = () => {
     return instance.get("/user/checkin");
+};
+
+export const updateProfile = (type, value) => {
+    return instance.post("/user/update-profile?type=" + type + "&value=" + value);
+};
+
+export const uploadAvatar = (file) => {
+    return instance.post("/user/upload-avatar", file, {
+        headers: {
+            "Content-Type": "multipart/form-data",
+        },
+    });
 };
 
 export const http = (method, url, data) => {
