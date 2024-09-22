@@ -10,7 +10,7 @@ import {
     Statistic,
     message
 } from "antd";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
     FolderOutlined,
     FileOutlined,
@@ -38,18 +38,12 @@ export default function HomeContent() {
         })
     );
 
-    useEffect(() => {
-        // 从持久化存储中读取数据
-        const storedState = JSON.parse(localStorage.getItem('user-storage'));
-        if (storedState && storedState.state) {
-            setTodaysReward(storedState.state.todaysReward);
-            setCheckinToday(storedState.state.checkinToday);
-        }
-    }, [setTodaysReward, setCheckinToday]);
+    const [checked, setChecked] = useState(isChecked());
 
     useEffect(() => {
-        console.log("todaysReward 更新:", todaysReward);
-    }, [todaysReward]);
+        // 每次组件加载时检查签到状态
+        setChecked(isChecked());
+    }, [isChecked]);
 
     const fileCategories = [
         { icon: <FolderOutlined />, title: "All Files", count: 120 },
@@ -108,6 +102,7 @@ export default function HomeContent() {
                 setCheckinToday(true);
                 const reward = Number(res.data.data.split('M')[0]);
                 setTodaysReward(reward);
+                setChecked(true);
                 messageApi.success(res.data.message);
             } else {
                 messageApi.error(res.data.message);
@@ -143,19 +138,19 @@ export default function HomeContent() {
                     </Col>
                     <Col span={8}>
                         <Card
-                            title="Daily Check-in"
+                            title="每日签到"
                             extra={
                                 <Button
                                     type="primary"
                                     icon={<CheckCircleOutlined />}
                                     onClick={handleCheckIn}
-                                    disabled={isChecked()}
+                                    disabled={checked}
                                 >
-                                    Check In
+                                    签到
                                 </Button>
                             }
                         >
-                            {isChecked() ? (
+                            {checked ? (
                                 <p>今天已签到！已获得{todaysReward}M</p>
                             ) : (
                                 <p>

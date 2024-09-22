@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
     Layout,
     Row,
@@ -31,6 +32,7 @@ const { Content } = Layout;
 const { Title, Text } = Typography;
 
 function PersonalPage() {
+    const navigate = useNavigate();
     const { userInfo } = useUserStore();
 
     const [user, setUser] = useState({
@@ -70,7 +72,7 @@ function PersonalPage() {
                     <Col span={8}>
                         <Card>
                             <div style={{ textAlign: "center" }}>
-                                {user.avatar ? <Avatar size={100} src={user.avatar} /> : 
+                                {user.avatar ? <Avatar size={100} src={`${import.meta.env.VITE_API_URL}${user.avatar}`} /> : 
                                 <Avatar size={100} icon={<UserOutlined />} />}
                                 <Title level={2} style={{ marginTop: 16 }}>
                                     {user.name}
@@ -86,6 +88,7 @@ function PersonalPage() {
                                 <Button
                                     type="primary"
                                     icon={<SettingOutlined />}
+                                    onClick={() => navigate("/home/usersettings")}
                                 >
                                     Edit Profile
                                 </Button>

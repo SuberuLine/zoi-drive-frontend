@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
     Table,
     Space,
@@ -345,6 +345,11 @@ export default function FileManager() {
                 columns={columns}
                 dataSource={currentFiles}
                 rowKey="key"
+                rowSelection={{
+                    onChange: (selectedRowKeys, selectedRows) => {
+                        console.log(`selectedRowKeys: ${selectedRowKeys}`, 'selectedRows: ', selectedRows);
+                    },
+                }}
                 expandIcon={() => null}
                 onRow={(record) => ({
                     onClick: () => handleFileClick(record),

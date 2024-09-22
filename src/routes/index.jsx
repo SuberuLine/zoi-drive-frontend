@@ -9,8 +9,15 @@ import ServerErrorPage from "@/components/status/ServerErrorPage";
 import MaintenancePage from "@/components/status/MaintenancePage";
 import Plans from "@/components/shop/Plans";
 import ResetPassword from "@/components/login/ResetPassword";
+import HomeContent from "@/layout/content/HomeContent";
+import FileContent from "@/layout/content/FileContent";
+import RecycleContent from "@/layout/content/RecycleContent";
+import SafesContent from "@/layout/content/SafesContent";
+import UserContent from "@/layout/content/UserContent";
+import UserSettings from "@/layout/content/UserSettings";
 
 const router = createBrowserRouter([
+
     {
         path: "/",
         element: <Index />,
@@ -33,8 +40,44 @@ const router = createBrowserRouter([
             <ProtectedRoute>
                 <Home />
             </ProtectedRoute>
-        )
+        ),
+        children: [
+            {
+                path: "",
+                element: <HomeContent />,
+            },
+            {
+                path: "home",
+                element: <HomeContent />,
+            },
+            {
+                path: "file",
+                element: <FileContent />,
+            },
+            {
+                path: "recycle",
+                element: <RecycleContent />,
+            },
+            {
+                path: "safes",
+
+                element: <SafesContent />,
+            },
+            {
+                path: "plans",
+                element: <Plans />,
+            },
+            {
+                path: "user",
+                element: <UserContent />,
+            },
+            {
+                path: "usersettings",
+                element: <UserSettings />,
+            },
+        ],
     },
+
     {
         path: "/plans",
         element: <Plans />,
