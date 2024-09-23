@@ -12,6 +12,7 @@ import {
     Row,
     Col,
     Divider,
+    Checkbox,
     Tag,
     Avatar
 } from "antd";
@@ -32,7 +33,7 @@ import { updateProfile } from "@/api";
 import TwoFactorBind from "@/components/two_factor/TwoFactorBind";
 import TwoFactorVerify from "@/components/two_factor/TwoFactorVerify";
 import TwoFactorUnBind from "@/components/two_factor/TwoFactorUnbind";
-import { uploadAvatar } from "@/api";
+import { uploadAvatar, deleteUser } from "@/api";
 
 const { Text } = Typography;
 
@@ -45,6 +46,8 @@ const UserSettings = () => {
     const [is2FABindModalOpen, setIs2FABindModalOpen] = useState(false);
     const [is2FAVerifyModalOpen, setIs2FAVerifyModalOpen] = useState(false);
     const [is2FAUnbindModalOpen, setIs2FAUnbindModalOpen] = useState(false);
+    const [isDeleteUserModalOpen, setIsDeleteUserModalOpen] = useState(false);
+    const [isDeleteUserModalChecked, setIsDeleteUserModalChecked] = useState(false);
     const [pendingAction, setPendingAction] = useState(null);
 
     const [devices, setDevices] = useState([
@@ -164,15 +167,31 @@ const UserSettings = () => {
         }
     };
 
+    const handleDeleteUser = async () => {
+        if (twoFactorEnabled) {
+            setPendingAction('delete');
+            setIs2FAVerifyModalOpen(true);
+        } else {
+            setIsDeleteUserModalOpen(false);
+            await deleteUser().then((res) => {
+                if (res.data.code == 200) {
+                    message.success(res.data.data)
+                } else {
+                    message.error(res.data.message)
+                }
+            })
+        }
+    };
+
     return (
         <div className="p-4">
             <Row gutter={[16, 16]}>
                 <Col xs={24} lg={12}>
-                    <Card title="Edit Profile">
+                    <Card title="编辑个人资料">
                         <Row gutter={[16, 16]}>
                             <Col span={8}>
                                 <div style={{ marginBottom: 16 }}>
-                                    <label>Avatar</label>
+                                    <label>头像</label>
                                     <ImgCrop rotationSlider>
                                         <Upload
                                             name="avatar"
@@ -202,7 +221,7 @@ const UserSettings = () => {
                             </Col>
                             <Col span={15}>
                                 <div style={{ marginBottom: 16 }}>
-                                    <label>Username</label>
+                                    <label>用户名</label>
                                     <Input
                                         prefix={<UserOutlined />}
                                         defaultValue={userInfo.username}
@@ -211,14 +230,14 @@ const UserSettings = () => {
                                             if (validateUsername(value)) {
                                                 handleBlur('username', value);
                                             } else {
-                                                message.error("Username must be 3-20 characters long and contain only letters and numbers.");
+                                                message.error("用户名必须是3-20个字符长，只能包含字母和数字。");
                                             }
                                         }}
                                     />
                                 </div>
 
                                 <div style={{ marginBottom: 16 }}>
-                                    <label>Phone Number</label>
+                                    <label>手机号码</label>
                                     <Input
                                         prefix={<MobileOutlined />}
                                         defaultValue={userInfo.phone}
@@ -227,14 +246,20 @@ const UserSettings = () => {
                                             if (validatePhone(value)) {
                                                 handleBlur('phone', value);
                                             } else {
-                                                message.error("Phone number must be 11 digits or empty.");
+                                                message.error("手机号码必须是11位数字或为空。");
                                             }
                                         }}
                                     />
                                 </div>
                             </Col>
                         </Row>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+                            <Button type="primary" danger onClick={() => setIsDeleteUserModalOpen(true)}>
+                                注销用户
+                            </Button>
+                        </div>
                     </Card>
+                    
                 </Col>
 
                 <Col xs={24} lg={12}>
@@ -402,6 +427,26 @@ const UserSettings = () => {
                     <TwoFactorBind onSuccess={bindSuccess}/>
                 </Modal>
             </Row>
+
+            {/* 注销用户Modal */}
+            <Modal
+                title="注销用户"
+                open={isDeleteUserModalOpen}
+                onCancel={() => setIsDeleteUserModalOpen(false)}
+                onOk={handleDeleteUser}
+                okButtonProps={{ disabled: !isDeleteUserModalChecked }}
+            >
+                <p>注销后，您的账户将无法恢复，请谨慎操作。</p>
+                <Checkbox onChange={(e) => {
+                    if (e.target.checked) {
+                        setIsDeleteUserModalChecked(true);
+                    } else {
+                        setIsDeleteUserModalChecked(false);
+                    }
+                }} style={{ marginTop: 16 }}>
+                    我已知晓注销后果，并确认注销
+                </Checkbox>
+            </Modal>
         </div>
     );
 };

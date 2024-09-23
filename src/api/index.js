@@ -85,6 +85,10 @@ export const logout = async () => {
     checkLogin();
 };
 
+export const deleteUser = () => {
+    return instance.delete("/auth/delete");
+};
+
 export const getUserInfo = () => {
     return instance.get("/user/info");
 };
