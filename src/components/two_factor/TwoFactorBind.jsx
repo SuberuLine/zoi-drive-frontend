@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, Steps, Button, Input, message, Typography, Space } from "antd";
+import { Card, Steps, Button, Input, message, Typography, Space, QRCode } from "antd";
 import {
     QrcodeOutlined,
     KeyOutlined,
@@ -8,42 +8,44 @@ import {
 
 const { Step } = Steps;
 const { Title, Paragraph } = Typography;
+import { twoFactorGenerate, confirmGenerate } from "@/api";
 
 export default function TwoFactorBind({ onSuccess=null }) {
     const [current, setCurrent] = useState(0);
     const [qrCode, setQrCode] = useState("");
     const [verificationCode, setVerificationCode] = useState("");
     const [isVerifying, setIsVerifying] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
 
-    const generateQRCode = () => {
-        // 模拟生成QR码的过程
-        setTimeout(() => {
-            setQrCode(
-                "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&issuer=Example"
-            );
-            setCurrent(1);
-        }, 1000);
+    const generateQRCode = async () => {
+        setIsGenerating(true);
+        await twoFactorGenerate().then((res) => {
+            if (res.data.code == 200) {
+                setQrCode(res.data.data);
+                setIsGenerating(false);
+                setCurrent(1);
+            } else {
+                setIsGenerating(false);
+                message.error("Failed to generate QR code. Please try again.");
+            }
+        });
     };
 
-    const verifyCode = () => {
+    const verifyCode = async () => {
         setIsVerifying(true);
-        // 模拟验证过程
-        setTimeout(() => {
-            if (verificationCode === "123456") {
-                // 假设 '123456' 是正确的验证码
-                message.success(
-                    "Two-factor authentication has been successfully set up!"
-                );
+        await confirmGenerate(verificationCode).then((res) => {
+            if (res.data.code == 200) {
+                message.success(res.data.data);
                 setCurrent(2);
                 // 成功时回调
                 if (onSuccess) {
                     onSuccess();
                 }
             } else {
-                message.error("Invalid verification code. Please try again.");
+                message.error("验证失败: " + res.data.message);
             }
             setIsVerifying(false);
-        }, 1500);
+        });
     };
 
     const steps = [
@@ -63,6 +65,7 @@ export default function TwoFactorBind({ onSuccess=null }) {
                         type="primary"
                         onClick={generateQRCode}
                         icon={<QrcodeOutlined />}
+                        loading={isGenerating}
                     >
                         Generate QR Code
                     </Button>
@@ -77,9 +80,9 @@ export default function TwoFactorBind({ onSuccess=null }) {
                     align="center"
                     style={{ width: "100%" }}
                 >
-                    <img
-                        src={qrCode}
-                        alt="QR Code"
+                    <QRCode
+                        value={qrCode}
+                        size={200}
                         style={{ marginBottom: 16 }}
                     />
                     <Paragraph>

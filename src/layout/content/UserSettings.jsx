@@ -33,7 +33,7 @@ import { updateProfile } from "@/api";
 import TwoFactorBind from "@/components/two_factor/TwoFactorBind";
 import TwoFactorVerify from "@/components/two_factor/TwoFactorVerify";
 import TwoFactorUnBind from "@/components/two_factor/TwoFactorUnbind";
-import { uploadAvatar, deleteUser } from "@/api";
+import { uploadAvatar, deleteUser, twoFactorUnbind, twoFactorValidate } from "@/api";
 
 const { Text } = Typography;
 
@@ -105,15 +105,16 @@ const UserSettings = () => {
     }
 
     // 解绑2FA成功
-    const unbindSuccess = (code) => {
-        if (code == 123456) {
-            setTimeout(() => {
+    const unbindTwoFactor = async (code) => {
+        await twoFactorUnbind(code).then((res) => {
+            if (res.data.code == 200) {
                 setTwoFactorEnabled(false);
                 setIs2FAUnbindModalOpen(false);
-            }, 1000);
-        } else {
-            message.error("验证码错误");
-        }
+                message.success(res.data.data);
+            } else {
+                message.error(res.data.message);
+            }
+        });
     }
 
     const validateUsername = (value) => {
@@ -151,20 +152,19 @@ const UserSettings = () => {
         }
     };
 
-    const handleTwoFactorVerify = (verificationCode) => {
-        // todo: 这里应该调用API来验证两步验证码
-        console.log(verificationCode);
-        // 假设验证成功
-        if (verificationCode == 123456) {
-            setIs2FAVerifyModalOpen(false);
-            if (pendingAction === 'email') {
-                setIsEmailModalVisible(true);
-            } else if (pendingAction === 'password') {
-                message.success("已发送重置密码邮件，10分钟内有效")
+    const handleTwoFactorVerify = async (verificationCode) => {
+        await twoFactorValidate(verificationCode).then((res) => {
+            if (res.data.code == 200) {
+                setIs2FAVerifyModalOpen(false);
+                if (pendingAction === 'email') {
+                    setIsEmailModalVisible(true);
+                } else if (pendingAction === 'password') {
+                    message.success("已发送重置密码邮件，10分钟内有效")
+                }
+            } else {
+                message.error(res.data.message);
             }
-        } else {
-            message.error("验证码错误");
-        }
+        })
     };
 
     const handleDeleteUser = async () => {
@@ -413,7 +413,7 @@ const UserSettings = () => {
                     onCancel={() => setIs2FAUnbindModalOpen(false)}
                     footer={null}
                 >
-                    <TwoFactorUnBind onUnbind={unbindSuccess} />
+                    <TwoFactorUnBind onUnbind={unbindTwoFactor} />
                 </Modal>
 
                 {/* 绑定两步验证Modal */}

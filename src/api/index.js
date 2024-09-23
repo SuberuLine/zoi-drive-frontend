@@ -117,6 +117,22 @@ export const uploadAvatar = (file) => {
     });
 };
 
+export const twoFactorGenerate = () => {
+    return instance.post("/2fa/generate");
+}
+
+export const confirmGenerate = (code) => {
+    return instance.post("/2fa/confirm-generate?code=" + code);
+}
+
+export const twoFactorValidate = (code) => {
+    return instance.post("/2fa/validate?code=" + code);
+}
+
+export const twoFactorUnbind = (code) => {
+    return instance.post("/2fa/remove?code=" + code);
+}
+
 export const http = (method, url, data) => {
     return instance({
         method,
