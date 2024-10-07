@@ -13,16 +13,6 @@ instance.interceptors.request.use((config) => {
     return config;
 });
 
-// instance.interceptors.response.use((response) => {
-//     return response;
-// }, (error) => {
-//     // 二进制数据错误不处理
-//     if ((error && error.request.responseType === 'blob') || error.request.responseType === 'arraybuffer') {
-//         return Promise.reject(error);
-//     }
-//     return Promise.reject(error);
-// });
-
 export const checkLogin = async () => {
     try {
         const result = await instance.get("/user/check");
@@ -98,7 +88,7 @@ export const getQRCode = () => {
 };
 
 export const uploadFile = (file) => {
-    return instance.post("/upload", file);
+    return instance.post("/file/upload", file);
 };
 
 export const checkIn = () => {

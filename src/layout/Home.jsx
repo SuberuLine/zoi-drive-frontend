@@ -279,7 +279,8 @@ const Home = () => {
                                     placement="bottomRight"
                                 >
                                     <Space>
-                                        <Avatar src={`${import.meta.env.VITE_API_URL}${userInfo?.avatar}`} />
+                                        {userInfo.avatar ? <Avatar src={`${import.meta.env.VITE_API_URL}${userInfo.avatar}`} /> : 
+                                        <Avatar icon={<UserOutlined />} />}
                                         {userInfo.username
                                             ? userInfo?.username
                                             : "获取用户信息失败"}

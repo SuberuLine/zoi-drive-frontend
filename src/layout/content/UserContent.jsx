@@ -37,7 +37,6 @@ function PersonalPage() {
 
     const [user, setUser] = useState({
         username: userInfo.username,
-        name: "user",
         email: userInfo.email,
         avatar: userInfo.avatar,
         memberLevel: "Gold",
@@ -75,12 +74,11 @@ function PersonalPage() {
                                 {user.avatar ? <Avatar size={100} src={`${import.meta.env.VITE_API_URL}${user.avatar}`} /> : 
                                 <Avatar size={100} icon={<UserOutlined />} />}
                                 <Title level={2} style={{ marginTop: 16 }}>
-                                    {user.name}
+                                    {user.username}
                                     <Tag color="gold" style={{ marginLeft: 8 }}>
                                         {user.memberLevel} Member
                                     </Tag>
                                 </Title>
-                                <Text type="secondary">@{user.username}</Text>
                                 <Divider />
                                 <p>
                                     <MailOutlined /> {user.email}
@@ -201,7 +199,7 @@ function PersonalPage() {
                                 <Col span={8}>
                                     <Statistic
                                         title="Two-Factor Auth"
-                                        value="Enabled"
+                                        value={userInfo.userSetting.twoFactorStatus}
                                         prefix={<CheckCircleOutlined />}
                                     />
                                 </Col>

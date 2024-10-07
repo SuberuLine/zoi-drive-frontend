@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { Modal, Upload, Progress, Button } from "antd";
+import { Modal, Upload, Progress, Button, message } from "antd";
 import { InboxOutlined } from "@ant-design/icons";
 import instance from "@/api";
-
+import computeFileMD5 from "@/utils/file";
 const { Dragger } = Upload;
 
 // 格式化文件大小
@@ -14,7 +14,7 @@ const formatFileSize = (bytes) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 };
 
-const UploadModal = ({ visible, onCancel, message }) => {
+const UploadModal = ({ visible, onCancel }) => {
     const [fileList, setFileList] = useState([]);
     const [uploading, setUploading] = useState(false);
 
@@ -47,15 +47,15 @@ const UploadModal = ({ visible, onCancel, message }) => {
             setFileList((prev) => prev.filter((item) => item.uid !== file.uid));
         },
         itemRender: (originNode, file) => {
-            if (file.status === "uploading") {
+            if (file.status === "uploading" || file.status === "calculating") {
                 const uploadedSize = file.size * (file.percent / 100);
                 return (
                     <div>
                         <div>{file.name}</div>
                         <Progress percent={file.percent} size="small" />
                         <div style={{ fontSize: "12px", color: "#888" }}>
-                            {formatFileSize(uploadedSize)} /{" "}
-                            {formatFileSize(file.size)}
+                            {file.status === "calculating" ? "准备文件中..." : "上传中..."}
+                            {formatFileSize(uploadedSize)} / {formatFileSize(file.size)}
                         </div>
                     </div>
                 );
@@ -64,6 +64,7 @@ const UploadModal = ({ visible, onCancel, message }) => {
         },
     };
 
+    
     const handleOk = async () => {
         if (fileList.length === 0) {
             message.warning("请先选择要上传的文件");
@@ -75,25 +76,56 @@ const UploadModal = ({ visible, onCancel, message }) => {
         const uploadPromises = fileList.map(async (file) => {
             if (file.status === "done") return; // 跳过已上传的文件
 
-            const formData = new FormData();
-            formData.append("file", file.originFileObj);
-
             try {
+                // 计算文件的 MD5，并显示进度
                 setFileList((prev) =>
                     prev.map((f) =>
-                        f.uid === file.uid ? { ...f, status: "uploading" } : f
+                        f.uid === file.uid ? { ...f, status: "calculating", percent: 0 } : f
+                    )
+                );
+                const md5 = await computeFileMD5(file.originFileObj, (progress) => {
+                    setFileList((prev) =>
+                        prev.map((f) =>
+                            f.uid === file.uid ? { ...f, percent: progress } : f
+                        )
+                    );
+                });
+
+                // 检查文件是否已存在
+                const checkResponse = await instance.get(`/file/check?hash=${md5}`);
+                
+                if (checkResponse.data.data !== null) {
+                    // 文件已存在，直接标记为上传成功
+                    setFileList((prev) =>
+                        prev.map((f) =>
+                            f.uid === file.uid ? { ...f, status: "done", percent: 100 } : f
+                        )
+                    );
+                    message.success(`文件 ${file.name} 已存在，无需重复上传`);
+                    return file.uid;
+                }
+
+                // 文件不存在，需要上传
+                const formData = new FormData();
+                formData.append("file", file.originFileObj);
+                formData.append("md5", md5);
+
+                setFileList((prev) =>
+                    prev.map((f) =>
+                        f.uid === file.uid ? { ...f, status: "uploading", percent: 0 } : f
                     )
                 );
 
-                // 替换为您的实际上传 API
                 const response = await instance.post(
-                    "http://localhost:9088/api/user/upload",
+                    "/file/upload",
                     formData,
                     {
+                        headers: {
+                            'Content-Type': 'multipart/form-data'
+                        },
                         onUploadProgress: (progressEvent) => {
                             const percent = Math.round(
-                                (progressEvent.loaded * 100) /
-                                    progressEvent.total
+                                (progressEvent.loaded * 100) / progressEvent.total
                             );
                             setFileList((prev) =>
                                 prev.map((f) =>
@@ -101,23 +133,23 @@ const UploadModal = ({ visible, onCancel, message }) => {
                                 )
                             );
                         },
+                        timeout: 0
                     }
                 );
 
+                console.log(response);
+
                 if (response.status === 200) {
                     message.success(`文件 ${file.name} 上传成功`);
+                    setFileList((prev) =>
+                        prev.map((f) =>
+                            f.uid === file.uid ? { ...f, status: "done" } : f
+                        )
+                    );
                     return file.uid;
                 } else {
-                    message.error(`${file.name} 上传失败: ${response.data.message}`);
-                    return null;
+                    throw new Error(response.data.message);
                 }
-
-                // 设置为完成状态： 显示上传成功的文件
-                // setFileList((prev) =>
-                //     prev.map((f) =>
-                //         f.uid === file.uid ? { ...f, status: "done"} : f
-                //     )
-                // );
             } catch (error) {
                 setFileList((prev) =>
                     prev.map((f) =>
@@ -128,19 +160,13 @@ const UploadModal = ({ visible, onCancel, message }) => {
             }
         });
 
-        const results = await Promise.all(uploadPromises);
-        const successfulUploads = results.filter(Boolean);
-
-        // 将上传成功的文件从列表中删除
-        setTimeout(() => {
-            setFileList((prev) => prev.filter(file => !successfulUploads.includes(file.uid)));
-        }, 5000);
-
+        await Promise.all(uploadPromises);
         setUploading(false);
 
-        if (successfulUploads.length === fileList.length) {
-            message.success("所有文件上传完成");
-        }
+        // 在所有文件上传完成后，设置一个定时器来清除文件列���
+        setTimeout(() => {
+            setFileList([]);
+        }, 3000); // 3秒后清除列表
     };
 
     const handleCancel = () => {
