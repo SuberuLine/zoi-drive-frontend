@@ -1,0 +1,17 @@
+.tableRow {
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.tableRow:hover {
+    background-color: #f5f5f5;
+}
+
+.dragOver {
+    background-color: #e6f7ff;
+    border: 2px dashed #1890ff;
+}
+
+.dragging {
+    opacity: 0.5;
+}

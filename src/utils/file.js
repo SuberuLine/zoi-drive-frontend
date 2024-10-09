@@ -30,20 +30,20 @@ export function getChunkSize(fileSize) {
  * @returns {number} - 最大并发数
  */
 function getMaxConcurrent(fileSize) {
-  const MB = 1024 * 1024;
-  const GB = 1024 * MB;
-  
-  if (fileSize < 20 * MB) {
-      return 2;
-  } else if (fileSize < 100 * MB) {
-      return 3;
-  } else if (fileSize < 1 * GB) {
-      return 5;
-  } else if (fileSize < 5 * GB) {
-      return 10;
-  } else {
-      return 20
-  }
+    const MB = 1024 * 1024;
+    const GB = 1024 * MB;
+
+    if (fileSize < 20 * MB) {
+        return 2;
+    } else if (fileSize < 100 * MB) {
+        return 3;
+    } else if (fileSize < 1 * GB) {
+        return 5;
+    } else if (fileSize < 5 * GB) {
+        return 10;
+    } else {
+        return 20;
+    }
 }
 
 /**
@@ -88,7 +88,7 @@ export function computeFileMD5(file, onProgress, cancelToken) {
                 let md5 = spark.end();
                 console.log("MD5计算完成:", md5);
                 spark.destroy();
-                resolve(md5);  // 确保这里返回计算得到的 MD5 值
+                resolve(md5); // 确保这里返回计算得到的 MD5 值
             }
 
             if (onProgress) {
@@ -137,7 +137,7 @@ export async function uploadChunk(file, md5, onProgress, cancelToken) {
         const elapsedTime = (Date.now() - startTime) / 1000; // 转换为秒
         const speedBps = uploadedSize / elapsedTime; // 字节/秒
         const progress = Math.round((uploadedSize / file.size) * 100);
-        
+
         if (onProgress) {
             onProgress(progress, speedBps);
         }
@@ -150,7 +150,7 @@ export async function uploadChunk(file, md5, onProgress, cancelToken) {
         formData.append("hash", md5);
         formData.append("chunk", "0");
         formData.append("chunks", "1");
-        formData.append("folderId", 10)
+        formData.append("folderId", 0);
 
         await instance.post("/file/upload/chunk", formData, {
             headers: {
@@ -176,6 +176,7 @@ export async function uploadChunk(file, md5, onProgress, cancelToken) {
             formData.append("hash", md5);
             formData.append("chunk", i.toString());
             formData.append("chunks", chunks.toString());
+            formData.append("folderId", 0);
 
             await instance.post("/file/upload/chunk", formData, {
                 headers: {

@@ -123,6 +123,58 @@ export const twoFactorUnbind = (code) => {
     return instance.post("/2fa/remove?code=" + code);
 }
 
+export const getUserFileList = async () => {
+    try {
+        const response = await instance.get('/file/list');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching file list:', error);
+        throw error;
+    }
+}
+
+export const moveFile = async (fileId, targetFolderId) => {
+    try {
+        const response = await instance.get('/file/move?fileId=' + fileId + 
+            '&targetFolderId=' + (targetFolderId === 'root' ? 0 : targetFolderId));
+        return response.data;
+    } catch (error) {
+        console.error('Error moving file:', error);
+        throw error;
+    }
+};
+
+export const createNewFolder = async (parentFolderKey, folderName) => {
+    try {
+        const response = await instance.get('/file/create-folder?parentFolderId=' + parentFolderKey + 
+            '&folderName=' + folderName);
+        return response.data;
+    } catch (error) {
+        console.error('Error creating new folder:', error);
+        throw error;
+    }
+};
+
+export const downloadFileByPresignedUrl = async (fileId) => {
+    try {
+        const response = await instance.get(`/file/${fileId}/pre-signed-link`);
+        return response.data;
+    } catch (error) {
+        console.error('Error downloading file:', error);
+        throw error;
+    }
+};
+
+export const deleteFile = async (fileId) => {
+    try {
+        const response = await instance.delete(`/file/${fileId}/delete`);
+        return response.data;
+    } catch (error) {
+        console.error('Error deleting file:', error);
+        throw error;
+    }
+};
+
 export const http = (method, url, data) => {
     return instance({
         method,
