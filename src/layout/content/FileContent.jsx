@@ -20,8 +20,9 @@ import {
     SoundOutlined,
     FileMarkdownOutlined,
     ArrowLeftOutlined,
+    CloudDownloadOutlined,
 } from "@ant-design/icons";
-import { getUserFileList, moveFile, createNewFolder, downloadFileByPresignedUrl, deleteFile } from "@/api";
+import { getUserFileList, moveFile, createNewFolder, downloadFileByPresignedUrl, deleteFile, magnetDownload, offlineDownload } from "@/api";
 import {formatDate} from "@/utils/formatter";
 import styles from "@/styles/FileContent.module.css"; 
 
@@ -37,6 +38,8 @@ export default function FileManager() {
     const [dragOverFolder, setDragOverFolder] = useState(null); // 拖动悬停的文件夹
     const [fileTree, setFileTree] = useState(null); // 完整的文件树结构
     const [loading, setLoading] = useState(true); // 加载文件列表
+    const [isOfflineDownloadModalVisible, setIsOfflineDownloadModalVisible] = useState(false); // 离线下载模态框可见性
+    const [offlineDownloadLink, setOfflineDownloadLink] = useState(""); // 离线下载链接
 
     // 初始化：获取文件列表
     useEffect(() => {
@@ -97,6 +100,32 @@ export default function FileManager() {
             message.error('下载文件失败');
         }
     };
+
+    // 处理离线下载
+    const handleOfflineDownload = () => {
+        setIsOfflineDownloadModalVisible(true);
+    };
+
+    // 确认离线下载
+    const handleOfflineDownloadOk = async () => {
+        if (offlineDownloadLink) {
+            try {
+                const res = await offlineDownload(offlineDownloadLink);
+                console.log(res.data);
+                if (res.code === 200) {
+                    message.success(`开始离线下载: ${offlineDownloadLink}`);
+                } else {
+                    message.error(`离线下载失败: ${res.message}`);
+                }
+                setIsOfflineDownloadModalVisible(false);
+                setOfflineDownloadLink("");
+            } catch (error) {
+                console.error('离线下载失败:', error);
+                message.error('离线下载失败');
+            }
+        }
+    };
+    
 
     // 处理文件删除
     const handleDelete = (file) => {
@@ -188,13 +217,29 @@ export default function FileManager() {
     };
 
     // 确认磁力下载
-    const handleMagnetDownloadOk = () => {
+    const handleMagnetDownloadOk = async () => {
         if (magnetLink) {
-            message.success(`开始磁力下载: ${magnetLink}`);
-            setIsMagnetModalVisible(false);
-            setMagnetLink("");
+            if (!magnetLink.startsWith("magnet:?xt=urn:btih:")) {
+                message.error('无效的磁力链接');
+                return;
+            }
+            try {
+                const res = await magnetDownload(magnetLink);
+                console.log(res.data);
+                if (res.code === 200) {
+                    message.success(`开始磁力下载: ${magnetLink}`);
+                } else {
+                    message.error(`磁力下载失败: ${res.message}`);
+                }
+                setIsMagnetModalVisible(false);
+                setMagnetLink("");
+            } catch (error) {
+                console.error('磁力下载失败:', error);  
+                message.error('磁力下载失败');
+            }
         }
     };
+    
 
     // 转换MimeType名称
     const getFileTypeName = (mimeType) => {
@@ -419,6 +464,12 @@ export default function FileManager() {
                 >
                     磁力下载
                 </Button>
+                <Button
+                    icon={<CloudDownloadOutlined />}
+                    onClick={handleOfflineDownload}
+                >
+                    离线下载
+                </Button>
             </Space>
 
             {/* 文件列表表格 */}
@@ -466,6 +517,20 @@ export default function FileManager() {
                     placeholder="输入磁力链接"
                     value={magnetLink}
                     onChange={(e) => setMagnetLink(e.target.value)}
+                />
+            </Modal>
+
+            {/* 离线下载模态框 */}
+            <Modal
+                title="离线下载"
+                open={isOfflineDownloadModalVisible}
+                onOk={handleOfflineDownloadOk}
+                onCancel={() => setIsOfflineDownloadModalVisible(false)}
+            >
+                <Input
+                    placeholder="输入离线下载链接"
+                    value={offlineDownloadLink}
+                    onChange={(e) => setOfflineDownloadLink(e.target.value)}
                 />
             </Modal>
         </div>

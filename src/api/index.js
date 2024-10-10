@@ -165,6 +165,26 @@ export const downloadFileByPresignedUrl = async (fileId) => {
     }
 };
 
+export const magnetDownload = async (magnet) => {
+    try {
+        const response = await instance.get('/file/download-magnet?magnet=' + magnet);
+        return response.data;
+    } catch (error) {
+        console.error('Error magnet downloading file:', error);
+        throw error;
+    }
+};
+
+export const offlineDownload = async (link) => {
+    try {
+        const response = await instance.get('/file/offline-download?link=' + link);
+        return response.data;
+    } catch (error) {
+        console.error('Error offline downloading file:', error);
+        throw error;
+    }
+};
+
 export const deleteFile = async (fileId) => {
     try {
         const response = await instance.delete(`/file/${fileId}/delete`);

@@ -9,6 +9,7 @@ import {
     LockOutlined,
     SettingOutlined,
     LogoutOutlined,
+    CloudDownloadOutlined,
     CreditCardOutlined,
     PlusOutlined,
 } from "@ant-design/icons";
@@ -31,7 +32,7 @@ import Loading from "@/components/status/Loading";
 import ClientErrorPage from "@/components/status/ClientErrorPage";
 import UploadModal from "@/components/file/UploadModal";
 import useUserStore from "@/store/UserStore";
-
+import DownloadTaskModal from "@/components/file/DownloadTaskModal";
 
 const { Header, Content, Footer, Sider } = Layout;
 const { Search } = Input;
@@ -76,6 +77,7 @@ const Home = () => {
     const [messageApi, contextHolder] = message.useMessage();
 
     const { userInfo, setUserInfo } = useUserStore();
+    const [isDownloadTaskModalVisible, setIsDownloadTaskModalVisible] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -170,6 +172,15 @@ const Home = () => {
         return item ? item.key : "1"; // 如果没有匹配项，默认选中主页
     };
 
+    // 下载任务弹窗
+    const showDownloadTaskModal = () => {
+        setIsDownloadTaskModalVisible(true);
+    };
+
+    const handleDownloadTaskModalCancel = () => {
+        setIsDownloadTaskModalVisible(false);
+      };
+
     return (
         <>
             {contextHolder}
@@ -184,11 +195,21 @@ const Home = () => {
                         style={{ insetInlineEnd: 40 }}
                     >
                         <FloatButton
+                            tooltip={<div>下载任务</div>}
+                            icon={<CloudDownloadOutlined />}
+                            onClick={showDownloadTaskModal}
+                            badge={{ count: 2, overflowCount: 99 }}
+                        />
+                        <FloatButton
                             tooltip={<div>上传文件</div>}
                             icon={<PlusOutlined />}
                             onClick={showUploadModal}
                         />
                     </FloatButton.Group>
+                    <DownloadTaskModal
+                        visible={isDownloadTaskModalVisible}
+                        onCancel={handleDownloadTaskModalCancel}
+                    />
                     <UploadModal
                         visible={isUploadModalVisible}
                         onCancel={handleUploadModalCancel}
