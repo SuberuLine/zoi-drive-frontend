@@ -124,7 +124,7 @@ export function computeFileMD5(file, onProgress, cancelToken) {
  * @param {object} cancelToken - 取消标记
  * @returns {Promise<void>}
  */
-export async function uploadChunk(file, md5, onProgress, cancelToken) {
+export async function uploadChunk(file, md5, folderId = 0, onProgress, cancelToken) {
     const chunkSize = getChunkSize(file.size);
     const chunks = Math.ceil(file.size / chunkSize);
     const maxConcurrent = getMaxConcurrent(file.size); // 最大并发上传数
@@ -150,7 +150,7 @@ export async function uploadChunk(file, md5, onProgress, cancelToken) {
         formData.append("hash", md5);
         formData.append("chunk", "0");
         formData.append("chunks", "1");
-        formData.append("folderId", 0);
+        formData.append("folderId", folderId);
 
         await instance.post("/file/upload/chunk", formData, {
             headers: {
@@ -176,7 +176,7 @@ export async function uploadChunk(file, md5, onProgress, cancelToken) {
             formData.append("hash", md5);
             formData.append("chunk", i.toString());
             formData.append("chunks", chunks.toString());
-            formData.append("folderId", 0);
+            formData.append("folderId", folderId);
 
             await instance.post("/file/upload/chunk", formData, {
                 headers: {

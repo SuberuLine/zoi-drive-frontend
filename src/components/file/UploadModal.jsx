@@ -1,9 +1,21 @@
 import { useState, useEffect } from "react";
-import { Modal, Upload, Progress, Button, message } from "antd";
-import { InboxOutlined, CloseCircleOutlined } from "@ant-design/icons";
+import { Modal, Upload, Progress, Button, message, Typography, Breadcrumb } from "antd";
+import { InboxOutlined, CloseCircleOutlined, HomeOutlined } from "@ant-design/icons";
 import instance from "@/api";
 import { computeFileMD5, uploadChunk } from "@/utils/file";
+import styled from "styled-components";
 const { Dragger } = Upload;
+const { Text } = Typography;
+
+// 样式化的 Breadcrumb 容器
+const StyledBreadcrumbContainer = styled.div`
+  background-color: #f0f2f5;
+  padding: 8px 16px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  border: 1px solid #d9d9d9;
+`;
+
 
 const formatSpeed = (speedBps) => {
     const units = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
@@ -18,7 +30,7 @@ const formatSpeed = (speedBps) => {
     return `${speed.toFixed(2)} ${units[unitIndex]}`;
 };
 
-const UploadModal = ({ visible, onCancel }) => {
+const UploadModal = ({ visible, onCancel, folderId = 0, currentPath = ["root"], onUploadComplete }) => {
     const [fileList, setFileList] = useState([]);
     const [uploading, setUploading] = useState(false);
     const [cancelTokens, setCancelTokens] = useState({});
@@ -30,6 +42,29 @@ const UploadModal = ({ visible, onCancel }) => {
             setCancelTokens({});
         }
     }, [visible]);
+
+    const generateBreadcrumbItems = (path) => {
+        if (!Array.isArray(path) || path.length === 0) {
+            return [{ title: <HomeOutlined />, key: "root" }];
+        }
+
+        const items = [{ title: <HomeOutlined />, key: "root" }];
+        const maxVisibleItems = 3; // 最大显示的路径项数（不包括省略号）
+
+        if (path.length > maxVisibleItems) {
+            items.push({ title: '...', key: 'ellipsis' });
+            path = path.slice(-maxVisibleItems + 1); // 只保留最后几项
+        }
+
+        path.forEach((item, index) => {
+            items.push({
+                title: item,
+                key: item + index // 使用 item + index 作为 key 以确保唯一性
+            });
+        });
+
+        return items;
+    };
 
     const handleOk = async () => {
         if (fileList.length === 0) {
@@ -69,16 +104,21 @@ const UploadModal = ({ visible, onCancel }) => {
 
                 console.log(`Computed MD5 for ${file.name}: ${md5}`);
 
-                const checkResponse = await instance.get(`/file/check?hash=${md5}`);
+                const checkResponse = await instance.get(`/file/check?folderId=${folderId}&hash=${md5}`);
+                const { exists, filename, newFileId } = checkResponse.data.data;
                 
-                if (checkResponse.data.data !== null) {
+                if (exists) {
                     console.log(`File ${file.name} already exists`);
                     setFileList((prev) =>
                         prev.map((f) =>
                             f.uid === fileItem.uid ? { ...f, status: "done", percent: 100 } : f
                         )
                     );
-                    message.success(`文件 ${file.name} 已存在，秒传成功`);
+                    if (newFileId) {
+                        message.success(`文件 ${filename} 已存在，已为您创建副本`);
+                    } else {
+                        message.success(`文件 ${filename} 已存在，秒传成功`);
+                    }
                     continue;
                 }
 
@@ -88,7 +128,7 @@ const UploadModal = ({ visible, onCancel }) => {
                     )
                 );
 
-                await uploadChunk(file, md5, (progress, speedBps) => {
+                await uploadChunk(file, md5, folderId, (progress, speedBps) => {
                     setFileList((prev) =>
                         prev.map((f) =>
                             f.uid === fileItem.uid ? { ...f, percent: progress } : f
@@ -125,6 +165,7 @@ const UploadModal = ({ visible, onCancel }) => {
         // 在所有文件上传完成后，设置一个定时器来清除文件列表
         setTimeout(() => {
             setFileList([]);
+            onUploadComplete();
         }, 3000); // 3秒后清除列表
     };
 
@@ -210,6 +251,12 @@ const UploadModal = ({ visible, onCancel }) => {
                 </Button>
             ]}
         >
+            {/* 显示当前上传路径 */}
+            <StyledBreadcrumbContainer style={{ margin: '16px 0' }}>
+                <Text strong style={{ marginRight: '8px' }}>当前上传位置：</Text>
+                <Breadcrumb items={generateBreadcrumbItems(currentPath)} />
+            </StyledBreadcrumbContainer>
+
             <Dragger {...props}>
                 <p className="ant-upload-drag-icon">
                     <InboxOutlined />

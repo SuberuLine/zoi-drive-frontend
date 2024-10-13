@@ -24,6 +24,7 @@ import {
 } from "@ant-design/icons";
 import { getUserFileList, moveFile, createNewFolder, downloadFileByPresignedUrl, deleteFile, magnetDownload, offlineDownload } from "@/api";
 import {formatDate} from "@/utils/formatter";
+import UploadModal from "@/components/file/UploadModal";
 import styles from "@/styles/FileContent.module.css"; 
 
 export default function FileManager() {
@@ -40,18 +41,47 @@ export default function FileManager() {
     const [loading, setLoading] = useState(true); // 加载文件列表
     const [isOfflineDownloadModalVisible, setIsOfflineDownloadModalVisible] = useState(false); // 离线下载模态框可见性
     const [offlineDownloadLink, setOfflineDownloadLink] = useState(""); // 离线下载链接
+    const [currentFolderId, setCurrentFolderId] = useState(0);  // 跟踪当前文件夹的 ID
+    const [isUploadModalVisible, setIsUploadModalVisible] = useState(false);  // 控制上传模态框的可见性
 
     // 初始化：获取文件列表
     useEffect(() => {
-        setLoading(true);
-        getUserFileList().then((res) => {
-            console.log(res);
-            setFileTree(res.data);
-            setCurrentFiles(Array.isArray(res.data) ? res.data : []);
-        }).finally(() => {
-            setLoading(false);
-        });
+        fetchFileList();
     }, []);
+
+    const fetchFileList = async () => {
+        setLoading(true);
+        try {
+            const res = await getUserFileList();
+            console.log('Fetched data:', res);
+            setFileTree(res.data);
+            setCurrentFiles(res.data);
+            setCurrentPath(["root"]);
+            setCurrentFolderId(0);
+        } catch (error) {
+            console.error('Error fetching file list:', error);
+            message.error('获取文件列表失败');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // 辅助函数：更新文件树中特定文件夹的内容
+    const updateFileTreeFolder = (folderId, newContent) => {
+        setFileTree(prevTree => {
+            const updateFolder = (files) => {
+                return files.map(file => {
+                    if (file.key === folderId && file.isFolder) {
+                        return { ...file, children: newContent };
+                    } else if (file.isFolder && file.children) {
+                        return { ...file, children: updateFolder(file.children) };
+                    }
+                    return file;
+                });
+            };
+            return updateFolder(prevTree);
+        });
+    };
 
     // 处理面包屑路径点击
     const handlePathClick = (index) => {
@@ -69,9 +99,12 @@ export default function FileManager() {
 
     // 修改处理文件/文件夹点击的函数
     const handleFileClick = (file) => {
+        console.log('File clicked:', file);
         if (file.isFolder) {
-            setCurrentPath([...currentPath, file.name]);
-            setCurrentFiles(Array.isArray(file.children) ? file.children : []);
+            console.log('Folder clicked, key:', file.key);
+            setCurrentPath(prevPath => [...prevPath, file.name]);
+            setCurrentFiles(file.children || []);
+            setCurrentFolderId(file.key);
         } else {
             handlePreview(file);
         }
@@ -142,27 +175,24 @@ export default function FileManager() {
         });
     };
 
-    // 处理文件上传
-    const handleUpload = (info) => {
-        if (info.file.status === "done") {
-            message.success(`上传文件成功: ${info.file.name}`);
-        } else if (info.file.status === "error") {
-            message.error(`上传文件失败: ${info.file.name}`);
-        }
-    };
-
     // 处理新建文件夹
     const handleNewFolder = () => {
         setIsNewFolderModalVisible(true);
     };
 
     // 获取当前文件夹的数值型 key
-    const getCurrentFolderKey = () => {
-        if (currentPath.length === 1) {
-            return 0; // 根目录为0 表示
+    const getCurrentFolderKey = (path = currentPath) => {
+        if (path.length === 1) {
+            return 0; // 根目录
         }
-        const currentFolder = findFolderByPath(fileTree, currentPath.slice(1));
-        return currentFolder ? currentFolder.key : null;
+        let currentFolder = fileTree;
+        for (let i = 1; i < path.length; i++) {
+            const folder = currentFolder.find(f => f.name === path[i] && f.isFolder);
+            if (!folder) return null;
+            currentFolder = folder.children;
+            if (i === path.length - 1) return folder.key;
+        }
+        return null;
     };
 
     // 递归查找文件夹
@@ -353,19 +383,59 @@ export default function FileManager() {
         setDraggingFile(null);
     };
 
+    // 处理上传按钮点击
+    const handleUploadClick = () => {
+        setIsUploadModalVisible(true);
+    };
+
+    // 处理上传完成
+    const handleUploadComplete = async () => {
+        setIsUploadModalVisible(false);
+        setLoading(true);
+        try {
+            const res = await getUserFileList();
+            setFileTree(res.data);
+            
+            // 导航到当前文件夹
+            let files = res.data;
+            for (let i = 1; i < currentPath.length; i++) {
+                const folder = files.find(f => f.name === currentPath[i] && f.isFolder);
+                if (folder) {
+                    files = folder.children;
+                } else {
+                    // 如果找不到对应的文件夹，可能是因为重命名或删除，我们就停在上一级
+                    setCurrentPath(prev => prev.slice(0, i));
+                    break;
+                }
+            }
+            setCurrentFiles(files);
+        } catch (error) {
+            console.error('Error fetching file list:', error);
+            message.error('更新文件列表失败');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // 添加返回上一级的函数
     const handleGoBack = () => {
         if (currentPath.length > 1) {
             const newPath = currentPath.slice(0, -1);
             setCurrentPath(newPath);
             let files = fileTree;
+            let folderId = 0;
             for (let i = 1; i < newPath.length; i++) {
                 const folder = files.find(f => f.name === newPath[i] && f.isFolder);
                 if (folder) {
-                    files = folder.children;
+                    files = folder.children || [];
+                    folderId = folder.key;
+                } else {
+                    console.warn(`Folder not found: ${newPath[i]}`);
+                    break;
                 }
             }
             setCurrentFiles(files);
+            setCurrentFolderId(folderId);
         }
     };
 
@@ -453,9 +523,7 @@ export default function FileManager() {
                         返回上级
                     </Button>
                 )}
-                <Upload onChange={handleUpload}>
-                    <Button icon={<UploadOutlined />}>上传文件</Button>
-                </Upload>
+                <Button icon={<UploadOutlined />} onClick={handleUploadClick}>上传文件</Button>
                 <Button icon={<FolderAddOutlined />} onClick={handleNewFolder}>
                     新建文件夹
                 </Button>
@@ -535,6 +603,15 @@ export default function FileManager() {
                     onChange={(e) => setOfflineDownloadLink(e.target.value)}
                 />
             </Modal>
+
+            {/* 上传模态框 */}
+            <UploadModal
+                visible={isUploadModalVisible}
+                onCancel={() => setIsUploadModalVisible(false)}
+                folderId={currentFolderId}
+                currentPath={currentPath}
+                onUploadComplete={handleUploadComplete}
+            />
         </div>
     );
 }

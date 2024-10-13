@@ -83,21 +83,21 @@ const Home = () => {
 
     // 进入主页时使用Token获取用户信息
     useEffect(() => {
-        const fetchUserInfo = async () => {
-            try {
-                setLoading(true);
-                const response = await getUserInfo();
-                setUserInfo(response.data.data);
-                console.log(response.data.data);
-                setLoading(false);
-            } catch (err) {
-                setError(err.message);
-                setLoading(false);
-            }
-        };
-
         fetchUserInfo();
-    }, [setUserInfo]);
+    }, []);
+
+    const fetchUserInfo = async () => {
+        try {
+            setLoading(true);
+            const response = await getUserInfo();
+            setUserInfo(response.data.data);
+            console.log(response.data.data);
+            setLoading(false);
+        } catch (err) {
+            setError(err.message);
+            setLoading(false);
+        }
+    };
 
     // 修改这里以从Zustand store读取用户信息
     const storageUsed = userInfo?.userDetail.usedStorage;
@@ -165,6 +165,10 @@ const Home = () => {
         setIsUploadModalVisible(false);
     };
 
+    const handleUploadComplete = () => {
+        setIsUploadModalVisible(false);
+    };
+
     // 根据当前路径获取默认选中的菜单项
     const getDefaultSelectedKey = () => {
         const path = location.pathname.split('/').pop();
@@ -179,7 +183,7 @@ const Home = () => {
 
     const handleDownloadTaskModalCancel = () => {
         setIsDownloadTaskModalVisible(false);
-      };
+    };
 
     return (
         <>
@@ -213,7 +217,7 @@ const Home = () => {
                     <UploadModal
                         visible={isUploadModalVisible}
                         onCancel={handleUploadModalCancel}
-                        message={messageApi}
+                        onUploadComplete={handleUploadComplete}
                     />
                     <Sider theme="light" breakpoint="lg" collapsedWidth="0">
                         <div
