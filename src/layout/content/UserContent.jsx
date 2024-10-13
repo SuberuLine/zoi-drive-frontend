@@ -126,7 +126,7 @@ function PersonalPage() {
                             <Row gutter={16}>
                                 <Col span={18}>
                                     <SpaceProgress used={user.usedSpace} total={user.totalSpace} 
-                                        type="base" size="large" />
+                                        type="percentage" size="large" />
                                 </Col>
                                 <Col span={6}>
                                     <Statistic

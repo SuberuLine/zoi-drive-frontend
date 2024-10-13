@@ -158,7 +158,11 @@ export const createNewFolder = async (parentFolderKey, folderName) => {
 export const downloadFileByPresignedUrl = async (fileId) => {
     try {
         const response = await instance.get(`/file/${fileId}/pre-signed-link`);
-        return response.data;
+        if (response.data.code === 200) {
+            return response.data.data;
+        } else {
+            throw new Error(response.data.message);
+        }
     } catch (error) {
         console.error('Error downloading file:', error);
         throw error;

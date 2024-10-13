@@ -85,9 +85,7 @@ export default function FileManager() {
     // 处理文件下载
     const handleDownload = async (file) => {
         try {
-            const res = await downloadFileByPresignedUrl(file.key);
-            const presignedUrl = res.data;
-            
+            const presignedUrl = await downloadFileByPresignedUrl(file.key);
             // 创建一个隐藏的 <a> 元素并触发点击
             const link = document.createElement('a');
             link.href = presignedUrl;
@@ -97,7 +95,10 @@ export default function FileManager() {
             document.body.removeChild(link);
         } catch (error) {
             console.error('下载文件失败:', error);
-            message.error('下载文件失败');
+            message.error({
+                content: `下载文件失败: ${error.message}`,
+                duration: 3,
+            });
         }
     };
 
@@ -461,6 +462,7 @@ export default function FileManager() {
                 <Button
                     icon={<ThunderboltOutlined />}
                     onClick={handleMagnetDownload}
+                    disabled={true}
                 >
                     磁力下载
                 </Button>
