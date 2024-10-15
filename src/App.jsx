@@ -42,7 +42,7 @@ function App() {
                         optionHoverBg: "#fafafa", // 选择框选项悬停时的背景色
                     },
                     Tree: {
-                        nodeSelectedBg: "#f5f5f5", // 树节点选中时的背景色
+                        nodeSelectedBg: "#adadac", // 树节点选中时的背景色
                         nodeHoverBg: "#fafafa", // 树节点悬停时的背景色
                     },
                     Table: {

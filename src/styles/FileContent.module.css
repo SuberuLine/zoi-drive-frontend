@@ -15,3 +15,18 @@
 .dragging {
     opacity: 0.5;
 }
+
+.fileNameCell {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.actionButton {
+    visibility: hidden;
+}
+
+.tableRow:hover .actionButton {
+    visibility: visible;
+}

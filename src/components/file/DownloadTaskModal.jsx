@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Modal, List, Tag, Progress, Space, Tabs } from "antd";
 import {
     CloudDownloadOutlined,

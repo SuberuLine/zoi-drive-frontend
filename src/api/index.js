@@ -144,6 +144,16 @@ export const moveFile = async (fileId, targetFolderId) => {
     }
 };
 
+export const renameFile = async (fileId, newName) => {
+    try {
+        const response = await instance.get('/file/rename?fileId=' + fileId + '&newName=' + newName);
+        return response.data;
+    } catch (error) {
+        console.error('Error renaming file:', error);
+        throw error;
+    }
+};
+
 export const createNewFolder = async (parentFolderKey, folderName) => {
     try {
         const response = await instance.get('/file/create-folder?parentFolderId=' + parentFolderKey + 
@@ -151,6 +161,47 @@ export const createNewFolder = async (parentFolderKey, folderName) => {
         return response.data;
     } catch (error) {
         console.error('Error creating new folder:', error);
+        throw error;
+    }
+};
+
+export const getDownloadLink = async (fileId) => {
+    try {
+        const response = await instance.get(`/file/${fileId}/download`);
+        if (response.data.code === 200) {
+            return response.data.data;
+        } else {
+            throw new Error(response.data.message || '获取下载链接失败');
+        }
+    } catch (error) {
+        console.error('获取下载链接时出错:', error);
+        throw error;
+    }
+};
+
+export const downloadFile = async (fileId, fileName) => {
+    try {
+        // 获取下载链接
+        const downloadLink = await getDownloadLink(fileId);
+        
+        // 创建一个虚拟的 <a> 元素
+        const link = document.createElement('a');
+        link.href = downloadLink;
+        link.setAttribute('download', fileName);
+        link.style.display = 'none';
+        
+        // 将链接添加到文档中
+        document.body.appendChild(link);
+        
+        // 模拟点击链接
+        link.click();
+        
+        // 清理：从文档中移除链接
+        document.body.removeChild(link);
+
+        return { success: true };
+    } catch (error) {
+        console.error('下载文件时出错:', error);
         throw error;
     }
 };

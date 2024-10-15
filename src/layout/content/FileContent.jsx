@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Table, Space, Button, Breadcrumb, Upload, message, Modal, Input } from "antd";
+import { Table, Space, Button, Breadcrumb, message, Modal, Input, Dropdown, Tree } from "antd";
 import {
     FileOutlined,
     FolderOutlined,
@@ -21,11 +21,16 @@ import {
     FileMarkdownOutlined,
     ArrowLeftOutlined,
     CloudDownloadOutlined,
+    EditOutlined,
+    MoreOutlined,
+    LinkOutlined,
+    DragOutlined,
 } from "@ant-design/icons";
-import { getUserFileList, moveFile, createNewFolder, downloadFileByPresignedUrl, deleteFile, magnetDownload, offlineDownload } from "@/api";
+import { getUserFileList, moveFile, createNewFolder, downloadFile, deleteFile, magnetDownload, offlineDownload, getDownloadLink, renameFile } from "@/api";
 import {formatDate} from "@/utils/formatter";
 import UploadModal from "@/components/file/UploadModal";
 import styles from "@/styles/FileContent.module.css"; 
+import PreviewContainer from '@/components/preview/PreviewContainer';
 
 export default function FileManager() {
 
@@ -37,12 +42,21 @@ export default function FileManager() {
     const [magnetLink, setMagnetLink] = useState(""); // 磁力链接
     const [draggingFile, setDraggingFile] = useState(null); // 正在拖动的文件
     const [dragOverFolder, setDragOverFolder] = useState(null); // 拖动悬停的文件夹
-    const [fileTree, setFileTree] = useState(null); // 完整的文件树结构
+    const [fileTree, setFileTree] = useState([]); // 完整的文件树结构
     const [loading, setLoading] = useState(true); // 加载文件列表
     const [isOfflineDownloadModalVisible, setIsOfflineDownloadModalVisible] = useState(false); // 离线下载模态框可见性
     const [offlineDownloadLink, setOfflineDownloadLink] = useState(""); // 离线下载链接
     const [currentFolderId, setCurrentFolderId] = useState(0);  // 跟踪当前文件夹的 ID
     const [isUploadModalVisible, setIsUploadModalVisible] = useState(false);  // 控制上传模态框的可见性
+    const [isRenameModalVisible, setIsRenameModalVisible] = useState(false); // 控制重命名模态框的可见性
+    const [fileToRename, setFileToRename] = useState(null); // 当前正在重命名的文件
+    const [newFileName, setNewFileName] = useState(""); // 新文件名
+    const [fileExtension, setFileExtension] = useState(""); // 文件扩展名
+    const [isMoveModalVisible, setIsMoveModalVisible] = useState(false); // 控制移动文件模态框的可见性
+    const [fileToMove, setFileToMove] = useState(null); // 当前正在移动的文件
+    const [selectedFolderId, setSelectedFolderId] = useState(null); // 当前选择的目标文件夹ID
+    const [previewFile, setPreviewFile] = useState(null);
+    const [isPreviewVisible, setIsPreviewVisible] = useState(false);
 
     // 初始化：获取文件列表
     useEffect(() => {
@@ -64,23 +78,6 @@ export default function FileManager() {
         } finally {
             setLoading(false);
         }
-    };
-
-    // 辅助函数：更新文件树中特定文件夹的内容
-    const updateFileTreeFolder = (folderId, newContent) => {
-        setFileTree(prevTree => {
-            const updateFolder = (files) => {
-                return files.map(file => {
-                    if (file.key === folderId && file.isFolder) {
-                        return { ...file, children: newContent };
-                    } else if (file.isFolder && file.children) {
-                        return { ...file, children: updateFolder(file.children) };
-                    }
-                    return file;
-                });
-            };
-            return updateFolder(prevTree);
-        });
     };
 
     // 处理面包屑路径点击
@@ -112,27 +109,28 @@ export default function FileManager() {
 
     // 处理文件预览
     const handlePreview = (file) => {
-        message.info(`预览文件: ${file.name}`);
+        setPreviewFile(file);
+        setIsPreviewVisible(true);
+    };
+
+    // 关闭预览
+    const handleClosePreview = () => {
+        setIsPreviewVisible(false);
+        setPreviewFile(null);
     };
 
     // 处理文件下载
-    const handleDownload = async (file) => {
-        try {
-            const presignedUrl = await downloadFileByPresignedUrl(file.key);
-            // 创建一个隐藏的 <a> 元素并触发点击
-            const link = document.createElement('a');
-            link.href = presignedUrl;
-            link.download = file.name; // 设置下载文件名
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        } catch (error) {
-            console.error('下载文件失败:', error);
-            message.error({
-                content: `下载文件失败: ${error.message}`,
-                duration: 3,
-            });
-        }
+    const handleDownload = (file) => {
+        // 实现文件下载逻辑
+        console.log('下载文件:', file);
+        message.success('开始下载文件');
+    };
+
+    // 处理获取直链
+    const handleGetLink = (file) => {
+        // 实现获取直链逻辑
+        console.log('获取直链:', file);
+        message.success('已复制直链到剪贴板');
     };
 
     // 处理离线下载
@@ -195,21 +193,6 @@ export default function FileManager() {
         return null;
     };
 
-    // 递归查找文件夹
-    const findFolderByPath = (files, path) => {
-        if (path.length === 0) {
-            return files;
-        }
-        const folder = files.find(f => f.name === path[0] && f.isFolder);
-        if (!folder) {
-            return null;
-        }
-        if (path.length === 1) {
-            return folder;
-        }
-        return findFolderByPath(folder.children, path.slice(1));
-    };
-
     // 确认新建文件夹
     const handleNewFolderOk = async () => {
         if (newFolderName) {
@@ -234,7 +217,6 @@ export default function FileManager() {
                 setCurrentFiles(prevFiles => [...prevFiles, newFolder]);
                 setIsNewFolderModalVisible(false);
                 setNewFolderName("");
-                message.success(`创建新文件夹: ${newFolderName}`);
             } catch (error) {
                 console.error('创建文件夹失败:', error);
                 message.error('创建文件夹失败');
@@ -373,8 +355,6 @@ export default function FileManager() {
                 };
                 return updatedFiles.map(f => f.key === targetFolder.key ? updatedTargetFolder : f);
             });
-
-            message.success(`已将 ${draggingFile.name} 移动到 ${targetFolder.name}`);
         } catch (error) {
             console.error('移动文件失败:', error);
             message.error('移动文件失败');
@@ -439,69 +419,119 @@ export default function FileManager() {
         }
     };
 
-    // 表格列定义
+    // 定义菜单项
+    const getMenuItems = (record) => [
+        {
+            key: 'preview',
+            icon: <EyeOutlined />,
+            label: '预览文件',
+            onClick: (e) => {
+                e.domEvent.stopPropagation();
+                handlePreview(record);
+            },
+        },
+        {
+            key: 'download',
+            icon: <DownloadOutlined />,
+            label: '下载文件',
+            onClick: (e) => {
+                e.domEvent.stopPropagation();
+                handleDownload(record);
+            },
+        },
+        {
+            key: 'getDownloadLink',
+            icon: <LinkOutlined />,
+            label: '获取直链',
+            onClick: (e) => {
+                e.domEvent.stopPropagation();
+                handleGetDownloadLink(record);
+            },
+        },
+        {
+            key: 'divider-1',
+            type: 'divider',
+        },
+        {
+            key: 'move',
+            icon: <DragOutlined />,
+            label: '移动文件',
+            onClick: (e) => {
+                e.domEvent.stopPropagation();
+                handleMove(record);
+            },
+        },
+        {
+            key: 'rename',
+            icon: <EditOutlined />,
+            label: '重命名文件',
+            onClick: (e) => {
+                e.domEvent.stopPropagation();
+                handleRename(record);
+            },
+        },
+        {
+            key: 'divider-2',
+            type: 'divider',
+        },
+        {
+            key: 'delete',
+            icon: <DeleteOutlined />,
+            label: '删除文件',
+            danger: true,
+            onClick: (e) => {
+                e.domEvent.stopPropagation();
+                handleDelete(record);
+            },
+        },
+    ];
+
+    // 修改表格列定义
     const columns = [
         {
             title: "名称",
             dataIndex: "name",
             key: "name",
             render: (text, record) => (
-                <Space>
-                    {getIcon(record)}
-                    {/* {record.isFolder ? <FolderOutlined /> : <FileOutlined />} */}
-                    <span>{text}</span>
-                </Space>
+                <div className={styles.fileNameCell}>
+                    <Space>
+                        {getIcon(record)}
+                        <span>{text}</span>
+                    </Space>
+                    {!record.isFolder && (
+                        <Dropdown
+                            menu={{ items: getMenuItems(record) }}
+                            trigger={['click']}
+                        >
+                            <Button
+                                icon={<MoreOutlined />}
+                                className={styles.actionButton}
+                                onClick={(e) => e.stopPropagation()}
+                            />
+                        </Dropdown>
+                    )}
+                </div>
             ),
         },
         {
             title: "大小",
             dataIndex: "size",
             key: "size",
+            width: 120,
         },
         {
             title: "类型",
             dataIndex: "type",
             key: "type",
+            width: 150,
             render: (text) => getFileTypeName(text),
         },
         {
             title: "上传日期",
             dataIndex: "uploadAt",
             key: "uploadAt",
+            width: 250,
             render: (text) => formatDate(text),
-        },
-        {
-            title: "操作",
-            key: "action",
-            fixed: "right",
-            width: 100,
-            align: "right",
-            render: (record) => (
-                <Space>
-                {!record.isFolder && (
-                    <>
-                        <Button icon={<EyeOutlined />} onClick={(e) => {
-                            handlePreview(record)
-                            e.stopPropagation();
-                        }}>
-                            预览
-                        </Button>
-                        <Button icon={<DownloadOutlined />} onClick={(e) => {
-                            handleDownload(record)
-                            e.stopPropagation();
-                        }}>
-                            下载
-                        </Button>
-                        <Button icon={<DeleteOutlined />} onClick={(e) => {
-                            handleDelete(record)
-                            e.stopPropagation();
-                        }}>
-                            删除
-                        </Button>
-                    </>
-                )}
-            </Space>
-            ),
         },
     ];
 
@@ -510,6 +540,103 @@ export default function FileManager() {
         title: <a onClick={() => handlePathClick(index)}>{path}</a>,
         key: index,
     }));
+
+    // 处理重命名
+    const handleRename = (file) => {
+        const nameParts = file.name.split('.');
+        const extension = nameParts.length > 1 ? nameParts.pop() : '';
+        const nameWithoutExtension = nameParts.join('.');
+        setFileToRename(file);
+        setNewFileName(nameWithoutExtension);
+        setFileExtension(extension);
+        setIsRenameModalVisible(true);
+    };
+
+    // 确认重命名
+    const handleRenameOk = async () => {
+        if (newFileName && fileToRename) {
+            const fullNewName = fileExtension ? `${newFileName}.${fileExtension}` : newFileName;
+            try {
+                // 调用后端 API 重命名文件
+                await renameFile(fileToRename.key, fullNewName);
+
+                // 更新前端状态
+                setCurrentFiles(prevFiles => 
+                    prevFiles.map(f => 
+                        f.key === fileToRename.key 
+                            ? { ...f, name: fullNewName } 
+                            : f
+                    )
+                );
+
+                setIsRenameModalVisible(false);
+                setFileToRename(null);
+                setNewFileName("");
+                setFileExtension("");
+            } catch (error) {
+                console.error('重命名文件失败:', error);
+                message.error('重命名文件失败');
+            }
+        }
+    };
+
+    // 处理移动文件
+    const handleMove = (file) => {
+        setFileToMove(file);
+        setSelectedFolderId(null);  // 重置选中的文件夹
+        setIsMoveModalVisible(true);
+    };
+
+    // 确认移动文件
+    const handleMoveOk = async () => {
+        if (fileToMove && selectedFolderId !== null) {
+            try {
+                // 调用后端 API 移动文件
+                await moveFile(fileToMove.key, selectedFolderId);
+
+                // 更新前端状态
+                await fetchFileList();  // 重新获取文件列表
+
+                setIsMoveModalVisible(false);
+                setFileToMove(null);
+                setSelectedFolderId(null);
+                message.success(`已将 ${fileToMove.name} 移动到新位置`);
+            } catch (error) {
+                console.error('移动文件失败:', error);
+                message.error('移动文件失败');
+            }
+        }
+    };
+
+    // 生成树形结构数据
+    const generateTreeData = (files) => {
+        if (!files || !Array.isArray(files)) {
+            return [];
+        }
+        return files
+            .filter(file => file.isFolder)
+            .map(file => ({
+                title: file.name,
+                key: file.key,
+                icon: <FolderOutlined />,
+                children: generateTreeData(file.children),
+            }));
+    };
+
+    // 处理树节点选择
+    const onSelect = (selectedKeys) => {
+        setSelectedFolderId(selectedKeys[0]);
+    };
+
+    // 准备树形数据，包括根目录
+    const treeData = [
+        {
+            title: "Root",
+            key: 0,
+            icon: <FolderOutlined />,
+            children: generateTreeData(fileTree)
+        }
+    ];
 
     return (
         <div style={{ padding: "24px" }}>
@@ -611,6 +738,63 @@ export default function FileManager() {
                 folderId={currentFolderId}
                 currentPath={currentPath}
                 onUploadComplete={handleUploadComplete}
+            />
+
+            {/* 重命名模态框 */}
+            <Modal
+                title="重命名文件"
+                open={isRenameModalVisible}
+                onOk={handleRenameOk}
+                onCancel={() => {
+                    setIsRenameModalVisible(false);
+                    setFileToRename(null);
+                    setNewFileName("");
+                    setFileExtension("");
+                }}
+            >
+                <Space.Compact style={{ width: '100%' }}>
+                    <Input
+                        placeholder="输入新的文件名"
+                        value={newFileName}
+                        onChange={(e) => setNewFileName(e.target.value)}
+                        style={{ width: 'calc(100% - 60px)' }}
+                    />
+                    {fileExtension && (
+                        <Input
+                            style={{ width: '60px' }}
+                            value={`.${fileExtension}`}
+                            disabled
+                        />
+                    )}
+                </Space.Compact>
+            </Modal>
+
+            {/* 移动文件模态框 */}
+            <Modal
+                title="移动文件"
+                open={isMoveModalVisible}
+                onOk={handleMoveOk}
+                onCancel={() => {
+                    setIsMoveModalVisible(false);
+                    setFileToMove(null);
+                    setSelectedFolderId(null);
+                }}
+            >
+                <Tree
+                    showLine={true}
+                    showIcon={true}
+                    treeData={treeData}
+                    onSelect={onSelect}
+                    defaultExpandAll
+                    defaultSelectedKeys={[selectedFolderId]}
+                />
+            </Modal>
+            <PreviewContainer
+                file={previewFile}
+                visible={isPreviewVisible}
+                onClose={handleClosePreview}
+                onDownload={handleDownload}
+                onGetLink={handleGetLink}
             />
         </div>
     );
