@@ -120,10 +120,23 @@ export default function FileManager() {
     };
 
     // 处理文件下载
-    const handleDownload = (file) => {
-        // 实现文件下载逻辑
-        console.log('下载文件:', file);
-        message.success('开始下载文件');
+    const handleDownload = async (file) => {
+        try {
+            const url = await getDownloadLink(file.key);
+            // 创建一个隐藏的 <a> 元素并触发点击
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = file.name; // 设置下载文件名
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            console.error('下载文件失败:', error);
+            message.error({
+                content: `下载文件失败: ${error.message}`,
+                duration: 3,
+            });
+        }
     };
 
     // 处理获取直链

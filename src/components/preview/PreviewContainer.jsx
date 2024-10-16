@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Modal, Button, Space, Typography } from "antd";
 import {
     DownloadOutlined,
@@ -7,6 +7,8 @@ import {
     FullscreenOutlined,
     CloseOutlined,
 } from "@ant-design/icons";
+import MediaPlayer from './MediaPlayer';
+import { getPreviewLink } from "@/api";
 
 const { Text } = Typography;
 
@@ -18,10 +20,26 @@ const PreviewContainer = ({
     onGetLink,
 }) => {
     const [isFullscreen, setIsFullscreen] = useState(true);
+    const [previewLink, setPreviewLink] = useState(null);
+
+    useEffect(() => {
+        if (visible && file && (file.type.startsWith('video/') || file.type.startsWith('audio/'))) {
+            getPreviewLink(file.key)
+                .then(data => setPreviewLink(data))
+                .catch(error => console.error('Error fetching preview link:', error));
+        } else {
+            setPreviewLink(null);
+        }
+    }, [file, visible]);
 
     const toggleFullscreen = () => {
         setIsFullscreen(!isFullscreen);
     };
+
+    const handleClose = useCallback(() => {
+        setPreviewLink(null);
+        onClose();
+    }, [onClose]);
 
     const modalStyle = isFullscreen
         ? { top: 0, margin: 0, padding: 0, maxWidth: "100%" }
@@ -36,16 +54,33 @@ const PreviewContainer = ({
                     icon={isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />} 
                     onClick={toggleFullscreen}
                 />
-                <Button type="text" icon={<CloseOutlined />} onClick={onClose} />
+                <Button type="text" icon={<CloseOutlined />} onClick={handleClose} />
             </Space>
         </div>
     );
+
+    const renderPreviewContent = () => {
+        if (!file) return null;
+
+        if (file.type.startsWith('video/') || file.type.startsWith('audio/')) {
+            console.log(previewLink)
+            return previewLink ? (
+                <MediaPlayer src={previewLink} type={file.type} />
+            ) : (
+                <div>加载中...</div>
+            );
+        }
+
+        // 处理其他文件类型的预览...
+        return <div>不支持预览此文件类型</div>;
+    };
 
     return (
         <Modal
             title={titleBar}
             open={visible}
-            onCancel={onClose}
+            onCancel={handleClose}
+            afterClose={handleClose}
             footer={null}
             width="100%"
             style={modalStyle}
@@ -59,6 +94,7 @@ const PreviewContainer = ({
             }}
             wrapClassName="file-preview-modal"
             closeIcon={null}
+            destroyOnClose={true}
         >
             <div
                 style={{
@@ -70,7 +106,7 @@ const PreviewContainer = ({
                 }}
             >
                 {/* 预览内容将在这里渲染 */}
-                <div>预览内容占位符</div>
+                {renderPreviewContent()}
             </div>
             <div
                 style={{

@@ -169,12 +169,26 @@ export const getDownloadLink = async (fileId) => {
     try {
         const response = await instance.get(`/file/${fileId}/download`);
         if (response.data.code === 200) {
-            return response.data.data;
+            return response.data;
         } else {
             throw new Error(response.data.message || '获取下载链接失败');
         }
     } catch (error) {
         console.error('获取下载链接时出错:', error);
+        throw error;
+    }
+};
+
+export const getPreviewLink = async (fileId) => {
+    try {
+        const response = await instance.get(`/file/${fileId}/preview`);
+        if (response.data.code === 200) {
+            return response.data.data;
+        } else {
+            throw new Error(response.data.message || '获取预览链接失败');
+        }
+    } catch (error) {
+        console.error('获取预览链接时出错:', error);
         throw error;
     }
 };
