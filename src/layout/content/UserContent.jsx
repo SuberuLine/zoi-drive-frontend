@@ -124,9 +124,8 @@ function PersonalPage() {
                     <Col span={16}>
                         <Card title="Storage Usage">
                             <Row gutter={16}>
-                                <Col span={18}>
-                                    <SpaceProgress used={user.usedSpace} total={user.totalSpace} 
-                                        type="percentage" size="large" />
+                                <Col span={18} className="mt-4">
+                                    <SpaceProgress used={user.usedSpace} total={user.totalSpace} showInfo={false} />
                                 </Col>
                                 <Col span={6}>
                                     <Statistic

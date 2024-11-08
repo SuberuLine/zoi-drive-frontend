@@ -8,6 +8,8 @@ import ClientErrorPage from "@/components/status/ClientErrorPage";
 import ServerErrorPage from "@/components/status/ServerErrorPage";
 import MaintenancePage from "@/components/status/MaintenancePage";
 import Plans from "@/components/shop/Plans";
+import Extra from "@/components/shop/Extra";
+import Coupons from "@/components/shop/Coupons";
 import ResetPassword from "@/components/login/ResetPassword";
 import HomeContent from "@/layout/content/HomeContent";
 import FileContent from "@/layout/content/FileContent";
@@ -60,12 +62,19 @@ const router = createBrowserRouter([
             },
             {
                 path: "safes",
-
                 element: <SafesContent />,
             },
             {
                 path: "plans",
                 element: <Plans />,
+            },
+            {
+                path: "extra",
+                element: <Extra />,
+            },
+            {
+                path: "coupons",
+                element: <Coupons />,
             },
             {
                 path: "user",
@@ -76,11 +85,6 @@ const router = createBrowserRouter([
                 element: <UserSettings />,
             },
         ],
-    },
-
-    {
-        path: "/plans",
-        element: <Plans />,
     },
     {
         path: "/error",

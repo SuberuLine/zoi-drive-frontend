@@ -56,13 +56,18 @@ const items = [
     { key: "2", icon: FolderOutlined, label: "文件", path: "file" },
     { key: "3", icon: DeleteOutlined, label: "回收站", path: "recycle" },
     { key: "4", icon: LockOutlined, label: "保险箱", path: "safes" },
-    { key: "5", icon: CreditCardOutlined, label: "账单", path: "plans" },
+    { key: "5", icon: CreditCardOutlined, label: "会员套餐", children: [
+        { key: "5-1", label: "会员套餐", path: "plans" },
+        { key: "5-2", label: "空间拓展", path: "extra" },
+        { key: "5-3", label: "持有券码", path: "coupons" },
+    ] },
     { key: "6", icon: UserOutlined, label: "个人", path: "user" },
 ].map((item) => ({
     key: item.key,
     icon: React.createElement(item.icon),
     label: item.label,
     path: item.path,
+    children: item.children,
 }));
 
 const Home = () => {
@@ -130,10 +135,22 @@ const Home = () => {
     );
 
     // 处理菜单项点击事件
-    const handleMenuClick = (e) => {
-        const selectedItem = items.find((item) => item.key === e.key);
-        if (selectedItem) {
-            navigate(`/home/${selectedItem.path}`);
+    const handleMenuClick = ({ key }) => {
+        const [parentKey, childKey] = key.split('-');
+        
+        if (childKey) {
+            // 处理子菜单点击
+            const parentItem = items.find(item => item.key === parentKey);
+            const childItem = parentItem.children.find(child => child.key === key);
+            if (childItem) {
+                navigate(`/home/${childItem.path}`);
+            }
+        } else {
+            // 处理主菜单点击
+            const selectedItem = items.find(item => item.key === key);
+            if (selectedItem && !selectedItem.children) {
+                navigate(`/home/${selectedItem.path}`);
+            }
         }
     };
 
@@ -169,12 +186,37 @@ const Home = () => {
         setIsUploadModalVisible(false);
     };
 
-    // 根据当前路径获取默认选中的菜单项
-    const getDefaultSelectedKey = () => {
+    // 根据当前路径获取默认选中的菜单项和展开的子菜单
+    const getDefaultKeys = () => {
         const path = location.pathname.split('/').pop();
-        const item = items.find(item => item.path === path);
-        return item ? item.key : "1"; // 如果没有匹配项，默认选中主页
+        
+        // 检查是否是子菜单项
+        const parentItem = items.find(item => 
+            item.children?.some(child => child.path === path)
+        );
+
+        if (parentItem) {
+            // 如果是子菜单项，返回父菜单key和子菜单key
+            const childItem = parentItem.children.find(child => child.path === path);
+            return {
+                selectedKey: childItem.key,
+                openKey: parentItem.key
+            };
+        }
+
+        // 如果是主菜单项，查找对应的菜单项
+        const mainItem = items.find(item => item.path === path);
+        return {
+            selectedKey: mainItem ? mainItem.key : "1",
+            openKey: null
+        };
     };
+
+    // 获取默认值
+    const { selectedKey, openKey } = getDefaultKeys();
+    
+    // 添加展开的子菜单状态
+    const [openKeys, setOpenKeys] = useState(openKey ? [openKey] : []);
 
     // 下载任务弹窗
     const showDownloadTaskModal = () => {
@@ -240,7 +282,10 @@ const Home = () => {
                         <Menu
                             mode="inline"
                             theme="light"
-                            defaultSelectedKeys={[getDefaultSelectedKey()]} // 获取菜单选中
+                            defaultSelectedKeys={[selectedKey]}
+                            defaultOpenKeys={openKeys}
+                            openKeys={openKeys}
+                            onOpenChange={setOpenKeys}
                             items={items}
                             onClick={handleMenuClick}
                         />

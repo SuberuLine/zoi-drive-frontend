@@ -1,6 +1,6 @@
 import { Progress } from "antd";
 
-const StorageProgress = ({ used, total, position, size="small", type="percentage" }) => {
+const StorageProgress = ({ used, total, position, size="small", type="percentage", showInfo=true }) => {
 
     const enoughtColors = {
         '0%': '#108ee9',
@@ -37,6 +37,7 @@ const StorageProgress = ({ used, total, position, size="small", type="percentage
                 size={size}
                 strokeColor={switchColors(percentage)}
                 percentPosition={position}
+                showInfo={showInfo}
                 format={() => `${used}MB / ${total}MB`}
             />
         );
@@ -49,6 +50,7 @@ const StorageProgress = ({ used, total, position, size="small", type="percentage
             size={size}
             strokeColor={switchColors(percentage)}
             percentPosition={position}
+            showInfo={showInfo}
         />
     );
 };
