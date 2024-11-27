@@ -25,8 +25,9 @@ import {
     MoreOutlined,
     LinkOutlined,
     DragOutlined,
+    ReloadOutlined,
 } from "@ant-design/icons";
-import { getUserFileList, moveFile, createNewFolder, downloadFile, deleteFile, magnetDownload, offlineDownload, getDownloadLink, renameFile } from "@/api";
+import { getUserFileList, moveFile, createNewFolder, deleteFile, magnetDownload, offlineDownload, getDownloadLink, renameFile } from "@/api";
 import {formatDate} from "@/utils/formatter";
 import UploadModal from "@/components/file/UploadModal";
 import styles from "@/styles/FileContent.module.css"; 
@@ -69,9 +70,21 @@ export default function FileManager() {
             const res = await getUserFileList();
             console.log('Fetched data:', res);
             setFileTree(res.data);
-            setCurrentFiles(res.data);
-            setCurrentPath(["root"]);
-            setCurrentFolderId(0);
+            
+            // 保持在当前目录
+            let files = res.data;
+            for (let i = 1; i < currentPath.length; i++) {
+                const folder = files.find(f => f.name === currentPath[i] && f.isFolder);
+                if (folder) {
+                    files = folder.children;
+                } else {
+                    // 如果找不到对应的文件夹，回到根目录
+                    setCurrentPath(['root']);
+                    files = res.data;
+                    break;
+                }
+            }
+            setCurrentFiles(files);
         } catch (error) {
             console.error('Error fetching file list:', error);
             message.error('获取文件列表失败');
@@ -158,7 +171,7 @@ export default function FileManager() {
                 const res = await offlineDownload(offlineDownloadLink);
                 console.log(res.data);
                 if (res.code === 200) {
-                    message.success(`开始离线下载: ${offlineDownloadLink}`);
+                    message.success(res.data);
                 } else {
                     message.error(`离线下载失败: ${res.message}`);
                 }
@@ -270,6 +283,7 @@ export default function FileManager() {
     // 转换MimeType名称
     const getFileTypeName = (mimeType) => {
         mimeType = mimeType.toLowerCase();
+        if (mimeType === 'folder') return '文件夹';
         if (mimeType.includes('pdf')) return 'PDF';
         if (mimeType.includes('word') || mimeType.includes('document')) return 'Word';
         if (mimeType.includes('sheet') || mimeType.includes('excel')) return 'Excel';
@@ -657,30 +671,51 @@ export default function FileManager() {
             <Breadcrumb items={breadcrumbItems} style={{ marginBottom: "16px" }} />
 
             {/* 操作按钮 */}
-            <Space style={{ marginBottom: "16px" }}>
-                {currentPath.length > 1 && (
-                    <Button icon={<ArrowLeftOutlined />} onClick={handleGoBack}>
+            <div style={{ 
+                marginBottom: "16px",
+                display: "flex",
+                justifyContent: "space-between"
+            }}>
+                {/* 左侧按钮组 */}
+                <Space>
+                    <Button 
+                        icon={<ArrowLeftOutlined />} 
+                        onClick={handleGoBack}
+                        disabled={currentPath.length <= 1} // 在根目录时禁用
+                    >
                         返回上级
                     </Button>
-                )}
-                <Button icon={<UploadOutlined />} onClick={handleUploadClick}>上传文件</Button>
-                <Button icon={<FolderAddOutlined />} onClick={handleNewFolder}>
-                    新建文件夹
-                </Button>
-                <Button
-                    icon={<ThunderboltOutlined />}
-                    onClick={handleMagnetDownload}
-                    disabled={true}
-                >
-                    磁力下载
-                </Button>
-                <Button
-                    icon={<CloudDownloadOutlined />}
-                    onClick={handleOfflineDownload}
-                >
-                    离线下载
-                </Button>
-            </Space>
+                    <Button 
+                        icon={<ReloadOutlined />} 
+                        onClick={fetchFileList}
+                    >
+                        刷新
+                    </Button>
+                </Space>
+
+                {/* 右侧按钮组 */}
+                <Space>
+                    <Button icon={<UploadOutlined />} onClick={handleUploadClick}>
+                        上传文件
+                    </Button>
+                    <Button icon={<FolderAddOutlined />} onClick={handleNewFolder}>
+                        新建文件夹
+                    </Button>
+                    <Button
+                        icon={<ThunderboltOutlined />}
+                        onClick={handleMagnetDownload}
+                        disabled={true}
+                    >
+                        磁力下载
+                    </Button>
+                    <Button
+                        icon={<CloudDownloadOutlined />}
+                        onClick={handleOfflineDownload}
+                    >
+                        离线下载
+                    </Button>
+                </Space>
+            </div>
 
             {/* 文件列表表格 */}
             <Table

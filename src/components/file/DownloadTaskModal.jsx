@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
-import { Modal, List, Tag, Progress, Space, Tabs } from "antd";
+import { Modal, List, Tag, Progress, Space, Tabs, Typography } from "antd";
 import {
     CloudDownloadOutlined,
     CheckCircleOutlined,
     CloseCircleOutlined,
     LoadingOutlined,
 } from "@ant-design/icons";
+
+const { Text } = Typography;
 
 const DownloadTaskModal = ({ visible, onCancel }) => {
     const [activeDownloads, setActiveDownloads] = useState([]);
@@ -101,6 +103,7 @@ const DownloadTaskModal = ({ visible, onCancel }) => {
             width={600}
         >
             <Tabs defaultActiveKey="1" items={items} />
+            {items.key === "2" ? <Text type="secondary">历史记录只展示最近5条</Text> : null}
         </Modal>
     );
 };

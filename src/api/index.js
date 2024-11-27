@@ -169,7 +169,7 @@ export const getDownloadLink = async (fileId) => {
     try {
         const response = await instance.get(`/file/${fileId}/download`);
         if (response.data.code === 200) {
-            return response.data;
+            return response.data.data;
         } else {
             throw new Error(response.data.message || '获取下载链接失败');
         }
@@ -246,7 +246,8 @@ export const magnetDownload = async (magnet) => {
 
 export const offlineDownload = async (link) => {
     try {
-        const response = await instance.get('/file/offline-download?link=' + link);
+        const encodeLink = encodeURIComponent(link);
+        const response = await instance.get('/file/offline-download?link=' + encodeLink);
         return response.data;
     } catch (error) {
         console.error('Error offline downloading file:', error);

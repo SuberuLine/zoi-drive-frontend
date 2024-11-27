@@ -19,17 +19,30 @@ const PreviewContainer = ({
     onDownload,
     onGetLink,
 }) => {
-    const [isFullscreen, setIsFullscreen] = useState(true);
+    const [isFullscreen, setIsFullscreen] = useState(false);
     const [previewLink, setPreviewLink] = useState(null);
 
     useEffect(() => {
-        if (visible && file && (file.type.startsWith('video/') || file.type.startsWith('audio/'))) {
-            getPreviewLink(file.key)
-                .then(data => setPreviewLink(data))
-                .catch(error => console.error('Error fetching preview link:', error));
-        } else {
-            setPreviewLink(null);
-        }
+        let mounted = true;
+
+        const fetchPreviewLink = async () => {
+            if (visible && file && (file.type.startsWith('video/') || file.type.startsWith('audio/'))) {
+                try {
+                    const data = await getPreviewLink(file.key);
+                    if (mounted) {
+                        setPreviewLink(data);
+                    }
+                } catch (error) {
+                    console.error('获取预览链接失败:', error);
+                }
+            }
+        };
+
+        fetchPreviewLink();
+
+        return () => {
+            mounted = false;
+        };
     }, [file, visible]);
 
     const toggleFullscreen = () => {
@@ -63,15 +76,16 @@ const PreviewContainer = ({
         if (!file) return null;
 
         if (file.type.startsWith('video/') || file.type.startsWith('audio/')) {
-            console.log(previewLink)
             return previewLink ? (
-                <MediaPlayer src={previewLink} type={file.type} />
+                <MediaPlayer 
+                    src={previewLink} 
+                    type={file.type === 'video/quicktime' ? 'video/mp4' : file.type}
+                />
             ) : (
                 <div>加载中...</div>
             );
         }
 
-        // 处理其他文件类型的预览...
         return <div>不支持预览此文件类型</div>;
     };
 

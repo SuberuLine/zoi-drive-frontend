@@ -27,12 +27,12 @@ const TwoFactorUnBind = ({ onUnbind, onCancel }) => {
 
   const handleUnbind = () => {
     if (code.length !== 6) {
-      setError('Please enter a valid 6-digit code.');
+      setError('请输入正确的六位验证码！');
       return;
     }
 
     if (!confirmed) {
-      setError('Please confirm that you want to disable two-factor authentication.');
+      setError('请先确认您已了解关闭两步验证的风险');
       return;
     }
 
@@ -41,34 +41,34 @@ const TwoFactorUnBind = ({ onUnbind, onCancel }) => {
 
   return (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
-      <Title level={4}>Disable Two-Factor Authentication</Title>
+      <Title level={4}>正在进行两步验证关闭操作</Title>
       
       <Text type="warning">
-        <ExclamationCircleOutlined /> Warning: Disabling two-factor authentication will make your account less secure.
+        <ExclamationCircleOutlined /> 警告：关闭两步验证会导致您的账户安全性降低
       </Text>
       
       <Space direction="vertical">
-        <Text>Enter your 6-digit verification code:</Text>
+        <Text>输入您验证器中的六位数验证码：</Text>
         <Input
           value={code}
           onChange={handleCodeChange}
           maxLength={6}
           style={{ width: '200px' }}
-          placeholder="000000"
+          placeholder="输入六位数的验证码"
         />
       </Space>
       
       {error && <Text type="danger">{error}</Text>}
       
       <Checkbox checked={confirmed} onChange={handleConfirmChange}>
-        I understand that disabling two-factor authentication reduces the security of my account.
+        我了解关闭两步认证会给我的账户带来的风险
       </Checkbox>
       
       <Space>
         <Button type="primary" danger onClick={handleUnbind} disabled={!code || !confirmed}>
-          Disable Two-Factor Authentication
+          关闭两步验证
         </Button>
-        <Button onClick={onCancel}>Cancel</Button>
+        <Button onClick={onCancel}>取消</Button>
       </Space>
     </Space>
   );
