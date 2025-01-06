@@ -4,6 +4,7 @@ import { InboxOutlined, CloseCircleOutlined, HomeOutlined } from "@ant-design/ic
 import instance from "@/api";
 import { computeFileMD5, uploadChunk } from "@/utils/file";
 import styled from "styled-components";
+import useUserStore from "@/store/UserStore";
 const { Dragger } = Upload;
 const { Text } = Typography;
 
@@ -35,6 +36,8 @@ const UploadModal = ({ visible, onCancel, folderId = 0, currentPath = ["root"], 
     const [uploading, setUploading] = useState(false);
     const [cancelTokens, setCancelTokens] = useState({});
     const [uploadSpeeds, setUploadSpeeds] = useState({});
+    const { userInfo } = useUserStore(); // 添加这一行获取用户信息
+    const availableSpace = userInfo?.userDetail?.totalStorage - userInfo?.userDetail?.usedStorage; // 直接使用字节差值
 
     useEffect(() => {
         if (!visible) {
@@ -69,6 +72,20 @@ const UploadModal = ({ visible, onCancel, folderId = 0, currentPath = ["root"], 
     const handleOk = async () => {
         if (fileList.length === 0) {
             message.warning("请先选择要上传的文件");
+            return;
+        }
+
+        // 检查总空间（以防上传过程中空间状态发生变化）
+        const totalUploadSize = fileList.reduce((acc, curr) => {
+            // 只计算未完成和未取消的文件
+            if (curr.status !== "done" && curr.status !== "canceled") {
+                return acc + curr.size;
+            }
+            return acc;
+        }, 0);
+
+        if (totalUploadSize > availableSpace) {
+            message.error('存储空间不足，无法上传文件！');
             return;
         }
 
@@ -187,6 +204,20 @@ const UploadModal = ({ visible, onCancel, folderId = 0, currentPath = ["root"], 
         multiple: true,
         fileList,
         beforeUpload: (file) => {
+
+            // 检查文件大小是否超过可用空间
+            if (file.size > availableSpace) {
+                message.error(`存储空间不足！剩余可用空间: ${(availableSpace / (1024 * 1024 * 1024)).toFixed(2)}GB，文件大小: ${(file.size / (1024 * 1024 * 1024)).toFixed(2)}GB`);
+                return false;
+            }
+
+            // 检查当前文件列表中所有文件的总大小
+            const currentTotalSize = fileList.reduce((acc, curr) => acc + curr.size, 0);
+            if (currentTotalSize + file.size > availableSpace) {
+                message.error('添加此文件后将超出存储空间限制！');
+                return false;
+            }
+
             setFileList((prev) => [
                 ...prev,
                 {

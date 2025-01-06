@@ -109,7 +109,7 @@ function PersonalPage() {
                             <Statistic
                                 className="mt-6"
                                 title="总计获得空间"
-                                value={user.totalCheckinReward}
+                                value={user.totalCheckinReward / (1024 * 1024)}
                                 prefix={<DatabaseOutlined />}
                                 suffix="Mb"
                             />
@@ -130,7 +130,7 @@ function PersonalPage() {
                                 <Col span={6}>
                                     <Statistic
                                         title="Used Space"
-                                        value={`${user.usedSpace}GB / ${user.totalSpace}GB`}
+                                        value={`${(user.usedSpace / (1024 * 1024 * 1024)).toFixed(2)}GB / ${(user.totalSpace / (1024 * 1024 * 1024)).toFixed(2)}GB`}
                                     />
                                 </Col>
                             </Row>

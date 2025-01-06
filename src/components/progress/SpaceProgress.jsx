@@ -27,6 +27,19 @@ const StorageProgress = ({ used, total, position, size="small", type="percentage
         }
     };
 
+    const formatStorage = (bytes) => {
+        const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        let size = bytes;
+        let unitIndex = 0;
+        
+        while (size >= 1024 && unitIndex < units.length - 1) {
+            size /= 1024;
+            unitIndex++;
+        }
+        
+        return `${size.toFixed(2)}${units[unitIndex]}`;
+    };
+
     const percentage = Math.round((used / total) * 100);
 
     if (type === 'percentage') {
@@ -38,7 +51,7 @@ const StorageProgress = ({ used, total, position, size="small", type="percentage
                 strokeColor={switchColors(percentage)}
                 percentPosition={position}
                 showInfo={showInfo}
-                format={() => `${used}MB / ${total}MB`}
+                format={() => `${formatStorage(used)} / ${formatStorage(total)}`}
             />
         );
     } 

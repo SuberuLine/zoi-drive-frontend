@@ -273,4 +273,8 @@ export const http = (method, url, data) => {
     });
 };
 
+export const deleteFolder = (folderId) => {
+    return instance.delete(`/file/folder/${folderId}/delete`);
+};
+
 export default instance;
