@@ -58,8 +58,8 @@ const UserSettings = () => {
 
     const handleAvatarChange = async (info) => {
         const file = info.file;
-        if (file.size > 1024 * 1024) {
-            message.error('头像大小不能超过1MB');
+        if (file.size > 1024 * 1024 * 5) {
+            message.error('头像大小不能超过5MB');
             return;
         }
     

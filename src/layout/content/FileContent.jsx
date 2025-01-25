@@ -201,23 +201,25 @@ export default function FileManager() {
                     if (record.isFolder) {
                         // 删除文件夹
                         response = await deleteFolder(record.key);
+                        // 文件夹删除的响应结构不同，需要特殊处理
+                        if (response.data.code === 200) {
+                            setCurrentFiles(prev => prev.filter(f => f.key !== record.key));
+                            message.success(response.data.data || '删除成功');
+                        } else {
+                            message.error(response.data.message || '删除失败');
+                        }
                     } else {
                         // 删除文件
                         response = await deleteFile(record.key);
-                    }
-
-                    // 根据响应结果处理
-                    if (response.data.code === 200) {
-                        // 删除成功才更新前端状态
-                        setCurrentFiles(prev => prev.filter(f => f.key !== record.key));
-                        message.success(response.data.message || '删除成功');
-                    } else {
-                        // 删除失败显示错误信息
-                        message.error(response.data.message || '删除失败');
+                        if (response.code === 200) {
+                            setCurrentFiles(prev => prev.filter(f => f.key !== record.key));
+                            message.success(response.data || '删除成功');
+                        } else {
+                            message.error(response.message || '删除失败');
+                        }
                     }
                 } catch (error) {
                     console.error('删除失败:', error);
-                    // 处理错误响应
                     if (error.response?.data?.message) {
                         message.error(error.response.data.message);
                     } else {
@@ -317,6 +319,7 @@ export default function FileManager() {
         if (mimeType.includes('word') || mimeType.includes('document')) return 'Word';
         if (mimeType.includes('sheet') || mimeType.includes('excel')) return 'Excel';
         if (mimeType.includes('presentation') || mimeType.includes('powerpoint')) return 'PowerPoint';
+        if (mimeType.includes('x-apple-diskimage')) return 'Apple 应用镜像';
         if (mimeType.includes('image')) return '图片';
         if (mimeType.includes('video')) return '视频';
         if (mimeType.includes('audio')) return '音频';
@@ -341,6 +344,8 @@ export default function FileManager() {
             return <FileExcelOutlined />;
         } else if (mimeType.includes('presentation') || mimeType.includes('powerpoint')) {
             return <FilePptOutlined />;
+        } else if (mimeType.includes('x-apple-diskimage')) {
+            return <FileZipOutlined />;
         } else if (mimeType.includes('image')) {
             return <FileImageOutlined />;
         } else if (mimeType.includes('video')) {

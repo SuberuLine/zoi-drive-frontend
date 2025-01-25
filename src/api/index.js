@@ -277,4 +277,20 @@ export const deleteFolder = (folderId) => {
     return instance.delete(`/file/folder/${folderId}/delete`);
 };
 
+export const getRecycleList = () => {
+    return instance.get('/recycle/list');
+};
+
+export const restoreFile = (fileId) => {
+    return instance.post(`/recycle/${fileId}/restore`);
+};
+
+export const deleteRecycleFile = (fileId) => {
+    return instance.delete(`/recycle/${fileId}/delete`);
+};
+
+export const deleteAllRecycleFiles = () => {
+    return instance.delete('/recycle/clear');
+};
+
 export default instance;
