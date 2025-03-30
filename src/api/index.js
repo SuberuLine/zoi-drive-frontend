@@ -282,7 +282,7 @@ export const magnetDownload = async (magnet) => {
 export const offlineDownload = async (link) => {
     try {
         const encodeLink = encodeURIComponent(link);
-        const response = await instance.get('/file/offline-download?link=' + encodeLink);
+        const response = await instance.get('/file/offline-download?url=' + encodeLink);
         return response.data;
     } catch (error) {
         console.error('Error offline downloading file:', error);

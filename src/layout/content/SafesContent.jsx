@@ -18,7 +18,7 @@ import {
     DownloadOutlined,
     UnlockOutlined,
 } from "@ant-design/icons";
-import { getSafesList, createNewSafeFolder, deleteSafeFile, renameFile, is2FATokenValid, moveFromSafe, getSafeDownloadLink } from "@/api";
+import { getSafesList, is2FATokenValid, moveFromSafe, getSafeDownloadLink } from "@/api";
 import { formatDate } from "@/utils/formatter";
 import styles from "@/styles/FileContent.module.css";
 import PreviewContainer from '@/components/preview/PreviewContainer';
@@ -44,8 +44,6 @@ const VerifyComponent = ({ onSuccess }) => (
         <TwoFactorVerify onSuccess={onSuccess} />
     </div>
 );
-
-
 
 // 主要内容组件
 const SafesContent = () => {
