@@ -1,75 +1,70 @@
-import { useState, useRef, useEffect } from "react";
-import { Input, Button, Space, Typography } from "antd";
+import { useState } from "react";
+import { Card, Input, Button, message, Typography, Space } from "antd";
+import { KeyOutlined } from "@ant-design/icons";
+import { twoFactorValidate } from "@/api";
 
-const { Text } = Typography;
+const { Title, Paragraph } = Typography;
 
-const TwoFactorInput = ({ onVerify }) => {
-    const [code, setCode] = useState(["", "", "", "", "", ""]);
-    const [error, setError] = useState("");
-    const inputRefs = useRef([]);
+export default function TwoFactorVerify({ onSuccess }) {
+    const [verificationCode, setVerificationCode] = useState("");
+    const [isVerifying, setIsVerifying] = useState(false);
 
-    useEffect(() => {
-        // Focus on the first input when the component mounts
-        if (inputRefs.current[0]) {
-            inputRefs.current[0].focus();
+    const handleVerify = async () => {
+        if (!verificationCode) {
+            message.warning('请输入验证码');
+            return;
         }
-    }, []);
 
-    const handleChange = (index, value) => {
-        const newCode = [...code];
-        newCode[index] = value;
-        setCode(newCode);
-        setError("");
-
-        // Move to the next input if the current one is filled
-        if (value && index < 5) {
-            inputRefs.current[index + 1].focus();
-        }
-    };
-
-    const handleKeyDown = (index, e) => {
-        // Move to the previous input on backspace if the current input is empty
-        if (e.key === "Backspace" && !code[index] && index > 0) {
-            inputRefs.current[index - 1].focus();
-        }
-    };
-
-    const handleVerify = () => {
-        const verificationCode = code.join("");
-        if (verificationCode.length === 6 && /^\d+$/.test(verificationCode)) {
-            onVerify(verificationCode);
-        } else {
-            setError("Please enter a valid 6-digit code.");
+        setIsVerifying(true);
+        try {
+            const res = await twoFactorValidate(verificationCode);
+            if (res.data.code === 200) {
+                message.success('验证成功');
+                if (onSuccess) {
+                    onSuccess();
+                }
+            } else {
+                message.error('验证失败: ' + res.data.message);
+            }
+        } catch (error) {
+            console.error('验证失败:', error);
+            message.error('验证失败');
+        } finally {
+            setIsVerifying(false);
         }
     };
 
     return (
-        <Space direction="vertical" size="large" style={{ width: "100%" }}>
-            <Text>Enter the 6-digit verification code:</Text>
-            <Space size="small">
-                {code.map((digit, index) => (
-                    <Input
-                        key={index}
-                        ref={(el) => (inputRefs.current[index] = el)}
-                        value={digit}
-                        onChange={(e) => handleChange(index, e.target.value)}
-                        onKeyDown={(e) => handleKeyDown(index, e)}
-                        maxLength={1}
-                        style={{
-                            width: "40px",
-                            height: "40px",
-                            textAlign: "center",
-                            fontSize: "18px",
-                        }}
-                    />
-                ))}
+        <Card
+            title="两步验证"
+            style={{ width: 500, margin: "auto" }}
+        >
+            <Space
+                direction="vertical"
+                align="center"
+                style={{ width: "100%" }}
+            >
+                <Title level={4}>请输入验证码</Title>
+                <Paragraph>
+                    请打开您的身份验证器应用程序，输入显示的验证码。
+                </Paragraph>
+                <Input
+                    placeholder="输入验证码"
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value)}
+                    style={{ width: 200, marginBottom: 16 }}
+                    onPressEnter={handleVerify}
+                />
+                <Button
+                    type="primary"
+                    onClick={handleVerify}
+                    loading={isVerifying}
+                    icon={<KeyOutlined />}
+                    disabled={!verificationCode}
+                >
+                    验证
+                </Button>
             </Space>
-            {error && <Text type="danger">{error}</Text>}
-            <Button type="primary" onClick={handleVerify} block>
-                Verify
-            </Button>
-        </Space>
+        </Card>
     );
-};
-
-export default TwoFactorInput;
+}

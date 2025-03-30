@@ -26,6 +26,8 @@ import {
     LinkOutlined,
     DragOutlined,
     ReloadOutlined,
+    LockOutlined,
+    ShareAltOutlined,
 } from "@ant-design/icons";
 import { getUserFileList, moveFile, createNewFolder, deleteFile, deleteFolder, magnetDownload, offlineDownload, getDownloadLink, renameFile } from "@/api";
 import {formatDate} from "@/utils/formatter";
@@ -56,11 +58,13 @@ export default function FileManager() {
     const [fileExtension, setFileExtension] = useState(""); // 文件扩展名
     const [isMoveModalVisible, setIsMoveModalVisible] = useState(false); // 控制移动文件模态框的可见性
     const [fileToMove, setFileToMove] = useState(null); // 当前正在移动的文件
-    const [selectedFolderId, setSelectedFolderId] = useState(null); // 当前选择的目标文件夹ID
+    const [selectedFolderId, setSelectedFolderId] = useState(null);
     const [previewFile, setPreviewFile] = useState(null);
     const [isPreviewVisible, setIsPreviewVisible] = useState(false);
     const [selectedRowKeys, setSelectedRowKeys] = useState([]);
     const [selectedRows, setSelectedRows] = useState([]);
+    const [isShareModalVisible, setIsShareModalVisible] = useState(false);
+    const [fileToShare, setFileToShare] = useState(null);
 
     // 初始化：获取文件列表
     useEffect(() => {
@@ -571,11 +575,30 @@ export default function FileManager() {
             label: '获取直链',
             onClick: (e) => {
                 e.domEvent.stopPropagation();
-                handleGetDownloadLink(record);
+                handleGetLink(record);
             },
         },
         {
             key: 'divider-1',
+            type: 'divider',
+        },
+        {
+            key: 'lock',
+            icon: <LockOutlined />,
+            label: '锁定文件',
+            onClick: (e) => {
+                e.domEvent.stopPropagation();
+                handleLock(record);
+            },
+        },
+        {
+            key: 'share',
+            icon: <ShareAltOutlined />,
+            label: '分享文件',
+            onClick: () => handleShare(record)
+        },
+        {
+            key: 'divider-2',
             type: 'divider',
         },
         {
@@ -597,7 +620,7 @@ export default function FileManager() {
             },
         },
         {
-            key: 'divider-2',
+            key: 'divider-3',
             type: 'divider',
         },
         {
@@ -817,23 +840,26 @@ export default function FileManager() {
         }
     ];
 
-    // 添加行选择配置
+    // 修改行选择配置，移除文件夹禁用
     const rowSelection = {
         selectedRowKeys,
         onChange: (selectedKeys, selectedItems) => {
             setSelectedRowKeys(selectedKeys);
             setSelectedRows(selectedItems);
         },
+        // 移除文件夹禁用条件
         getCheckboxProps: (record) => ({
-            disabled: record.isFolder,
             name: record.name,
         })
     };
 
-    // 处理批量操作
+    // 处理批量分享
     const handleBatchShare = () => {
-        message.info(`分享 ${selectedRows.length} 个文件`);
-        // TODO: 实现分享逻辑
+        if (selectedRows.length === 0) {
+            message.warning('请先选择要分享的文件或文件夹');
+            return;
+        }
+        setIsShareModalVisible(true);
     };
 
     const handleBatchMove = () => {
@@ -916,6 +942,17 @@ export default function FileManager() {
     const handleBatchCancel = () => {
         setSelectedRowKeys([]);
         setSelectedRows([]);
+    };
+
+    // 处理单个文件分享
+    const handleShare = (record) => {
+        setSelectedRows([record]);
+        setIsShareModalVisible(true);
+    };
+
+    // 关闭分享模态框
+    const handleShareModalClose = () => {
+        setIsShareModalVisible(false);
     };
 
     return (

@@ -17,9 +17,9 @@ import RecycleContent from "@/layout/content/RecycleContent";
 import SafesContent from "@/layout/content/SafesContent";
 import UserContent from "@/layout/content/UserContent";
 import UserSettings from "@/layout/content/UserSettings";
+import ShareContent from "@/layout/content/ShareContent";
 
 const router = createBrowserRouter([
-
     {
         path: "/",
         element: <Index />,
@@ -63,6 +63,10 @@ const router = createBrowserRouter([
             {
                 path: "safes",
                 element: <SafesContent />,
+            },
+            {
+                path: "share",
+                element: <ShareContent />,
             },
             {
                 path: "plans",

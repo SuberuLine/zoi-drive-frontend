@@ -12,6 +12,7 @@ import {
     CloudDownloadOutlined,
     CreditCardOutlined,
     PlusOutlined,
+    ShareAltOutlined
 } from "@ant-design/icons";
 import {
     Layout,
@@ -56,12 +57,13 @@ const items = [
     { key: "2", icon: FolderOutlined, label: "文件", path: "file" },
     { key: "3", icon: DeleteOutlined, label: "回收站", path: "recycle" },
     { key: "4", icon: LockOutlined, label: "保险箱", path: "safes" },
-    { key: "5", icon: CreditCardOutlined, label: "会员套餐", children: [
-        { key: "5-1", label: "会员套餐", path: "plans" },
-        { key: "5-2", label: "空间拓展", path: "extra" },
-        { key: "5-3", label: "持有券码", path: "coupons" },
+    { key: "5", icon: ShareAltOutlined, label: "分享", path: "share" },
+    { key: "6", icon: CreditCardOutlined, label: "会员套餐", children: [
+        { key: "6-1", label: "会员套餐", path: "plans" },
+        { key: "6-2", label: "空间拓展", path: "extra" },
+        { key: "6-3", label: "持有券码", path: "coupons" },
     ] },
-    { key: "6", icon: UserOutlined, label: "个人", path: "user" },
+    { key: "7", icon: UserOutlined, label: "个人", path: "user" },
 ].map((item) => ({
     key: item.key,
     icon: React.createElement(item.icon),
@@ -104,7 +106,7 @@ const Home = () => {
         }
     };
 
-    // 修改这里以从Zustand store读取用户信息
+    // 从Zustand store读取用户信息
     const storageUsed = userInfo?.userDetail.usedStorage;
     const storageTotal = userInfo?.userDetail.totalStorage;
 

@@ -293,4 +293,103 @@ export const deleteAllRecycleFiles = () => {
     return instance.delete('/recycle/clear');
 };
 
+// 获取保险箱文件列表
+export const getSafesList = () => {
+    return instance.get('/safes/list');
+};
+
+// 创建保险箱文件夹
+export const createNewSafeFolder = (parentId, name) => {
+    return instance.post('/safes/folder', {
+        parentId,
+        name
+    });
+};
+
+// 删除保险箱文件
+export const deleteSafeFile = (fileId) => {
+    return instance.delete(`/safes/${fileId}`);
+};
+
+// 获取保险箱文件下载链接
+export const getSafeDownloadLink = (fileId) => {
+    return instance.get(`/safes/${fileId}/download`);
+};
+
+// 移动文件到保险箱（从普通文件区加密到保险箱）
+export const moveToSafe = (fileIds) => {
+    return instance.post('/safes/encrypt', {
+        fileIds: Array.isArray(fileIds) ? fileIds : [fileIds]
+    });
+};
+
+// 从保险箱移出（解密）
+export const moveFromSafe = (fileIds) => {
+    return instance.post('/safes/decrypt', {
+        fileIds: Array.isArray(fileIds) ? fileIds : [fileIds]
+    });
+};
+
+// 获取我的分享列表
+export const getMyShares = () => {
+    return instance.get('/shares/my');
+};
+
+// 获取他人分享列表
+export const getOthersShares = () => {
+    return instance.get('/shares/others');
+};
+
+// 取消分享
+export const cancelShare = (shareId) => {
+    return instance.delete(`/shares/${shareId}`);
+};
+
+// 延长分享时间
+export const extendShareTime = (shareId, days) => {
+    return instance.put(`/shares/${shareId}/extend`, {
+        days: days
+    });
+};
+
+// 创建分享
+export const createShare = (shareData) => {
+    return instance.post('/shares/create', shareData);
+};
+
+// 获取分享详情
+export const getShareDetail = (shareCode) => {
+    return instance.get(`/shares/detail/${shareCode}`);
+};
+
+// 验证分享密码
+export const verifySharePassword = (shareCode, password) => {
+    return instance.post(`/shares/verify/${shareCode}`, {
+        password
+    });
+};
+
+// 记录分享访问
+export const recordShareVisit = (shareCode) => {
+    return instance.post(`/shares/visit/${shareCode}`);
+};
+
+// 记录分享下载
+export const recordShareDownload = (shareCode) => {
+    return instance.post(`/shares/download/${shareCode}`);
+};
+
+// 保存分享文件到我的网盘
+export const saveToMyDrive = (fileId, shareCode) => {
+    return instance.post('/shares/save', {
+        fileId,
+        shareCode
+    });
+};
+
+// 获取分享文件下载链接
+export const getShareDownloadLink = (shareCode) => {
+    return instance.post(`/shares/download/${shareCode}`);
+};
+
 export default instance;
