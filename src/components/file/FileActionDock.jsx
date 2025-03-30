@@ -5,7 +5,8 @@ import {
     DragOutlined,
     DeleteOutlined,
     DownloadOutlined,
-    CloseOutlined
+    CloseOutlined,
+    LockOutlined
 } from '@ant-design/icons';
 import styled from 'styled-components';
 import { Divider } from 'antd';
@@ -61,6 +62,8 @@ const FileActionDock = ({
     onMove, 
     onDelete, 
     onDownload, 
+    onMoveToSafe,
+    disableMoveToSafe,
     onCancel 
 }) => {
     return (
@@ -79,6 +82,15 @@ const FileActionDock = ({
                     <ActionButton onClick={onDownload}>
                         <DownloadOutlined />
                         <span className="button-text">下载</span>
+                    </ActionButton>
+                    <Divider type="vertical" />
+                    <ActionButton 
+                        onClick={onMoveToSafe}
+                        disabled={disableMoveToSafe}
+                        title={disableMoveToSafe ? "文件夹不能转入保险箱" : ""}
+                    >
+                        <LockOutlined />
+                        <span className="button-text">转入保险箱</span>
                     </ActionButton>
                     <Divider type="vertical" />
                     <ActionButton onClick={onDelete} danger>

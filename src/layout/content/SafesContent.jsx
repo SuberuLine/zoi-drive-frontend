@@ -16,8 +16,9 @@ import {
     SoundOutlined,
     FileMarkdownOutlined,
     DownloadOutlined,
+    UnlockOutlined,
 } from "@ant-design/icons";
-import { getSafesList, createNewSafeFolder, deleteSafeFile, renameFile } from "@/api";
+import { getSafesList, createNewSafeFolder, deleteSafeFile, renameFile, is2FATokenValid, moveFromSafe, getSafeDownloadLink } from "@/api";
 import { formatDate } from "@/utils/formatter";
 import styles from "@/styles/FileContent.module.css";
 import PreviewContainer from '@/components/preview/PreviewContainer';
@@ -44,11 +45,13 @@ const VerifyComponent = ({ onSuccess }) => (
     </div>
 );
 
+
+
 // 主要内容组件
 const SafesContent = () => {
     const [currentPath, setCurrentPath] = useState(["保险箱"]);
     const [currentFiles, setCurrentFiles] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [isNewFolderModalVisible, setIsNewFolderModalVisible] = useState(false);
     const [newFolderName, setNewFolderName] = useState("");
     const [previewFile, setPreviewFile] = useState(null);
@@ -57,21 +60,24 @@ const SafesContent = () => {
     const [currentFolderId, setCurrentFolderId] = useState(0);
     const { userInfo } = useUserStore();
 
+    // 组件加载时检查令牌是否有效
+    useEffect(() => {
+        // 如果用户已开启两步验证，检查令牌是否在有效期内
+        if (userInfo.userSetting?.twoFactorStatus) {
+            if (is2FATokenValid()) {
+                setIsVerified(true);
+            } else {
+                // 确保未验证时不处于加载状态
+                setLoading(false);
+            }
+        }
+    }, [userInfo.userSetting?.twoFactorStatus]);
+
     useEffect(() => {
         if (isVerified) {
             fetchSafesList();
         }
     }, [isVerified, currentFolderId]);
-
-    // 如果未开启两步验证，显示绑定组件
-    if (!userInfo.userSetting?.twoFactorStatus) {
-        return <NotOpenTwoFactor />;
-    }
-
-    // 如果未通过两步验证，显示验证组件
-    if (!isVerified) {
-        return <VerifyComponent onSuccess={() => setIsVerified(true)} />;
-    }
 
     // 获取保险箱文件列表
     const fetchSafesList = async () => {
@@ -81,7 +87,7 @@ const SafesContent = () => {
             if (response.data.code === 200) {
                 const files = response.data.data || [];
                 const formattedFiles = files.map(file => ({
-                    key: file.id,
+                    key: file.key,
                     name: file.name,
                     isFolder: file.type === 'folder',
                     type: file.type,
@@ -90,14 +96,32 @@ const SafesContent = () => {
                 }));
                 setCurrentFiles(formattedFiles);
             } else {
-                message.error(response.data.message || '获取保险箱列表失败');
-                setCurrentFiles([]);
+                // 检查是否是因为令牌过期或无效
+                if (response.data.code === 401 || 
+                    response.data.code === 403 || 
+                    response.data.message?.includes('令牌') || 
+                    response.data.message?.includes('token')) {
+                    // 将验证状态重置为未验证
+                    setIsVerified(false);
+                    message.warning('验证已过期，请重新验证');
+                } else {
+                    message.error(response.data.message || '获取保险箱列表失败');
+                    setCurrentFiles([]);
+                }
             }
         } catch (error) {
             console.error('获取保险箱列表失败:', error);
-            message.error('获取保险箱列表失败');
-            setCurrentFiles([]);
+            
+            // 检查是否是认证错误
+            if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+                setIsVerified(false);
+                message.warning('验证已过期，请重新验证');
+            } else {
+                message.error('获取保险箱列表失败');
+                setCurrentFiles([]);
+            }
         } finally {
+            // 重要：确保无论成功还是失败都重置加载状态
             setLoading(false);
         }
     };
@@ -117,38 +141,93 @@ const SafesContent = () => {
     // 处理文件下载
     const handleDownload = async (file) => {
         try {
-            const url = await getDownloadLink(file.key);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = file.name;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            // 显示下载中提示
+            const loadingMessage = message.loading('获取下载链接...', 0);
+            
+            // 使用保险箱专用的下载API
+            const response = await getSafeDownloadLink(file.key);
+            
+            // 关闭加载提示
+            loadingMessage();
+            
+            if (response.data.code === 200) {
+                // 获取返回的下载链接
+                const downloadUrl = response.data.data;
+                
+                // 创建一个隐藏的链接元素并触发点击
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.download = file.name; // 使用文件名
+                link.style.display = 'none';
+                
+                // 添加到文档中并触发点击
+                document.body.appendChild(link);
+                link.click();
+                
+                // 清理DOM
+                setTimeout(() => {
+                    document.body.removeChild(link);
+                }, 100);
+                
+                message.success('文件下载已开始');
+            } else {
+                // 错误处理
+                message.error(response.data.message || '获取下载链接失败');
+            }
         } catch (error) {
             console.error('下载文件失败:', error);
-            message.error('下载文件失败');
+            
+            // 详细错误信息
+            if (error.response && error.response.status === 401) {
+                setIsVerified(false);
+                message.warning('验证已过期，请重新验证');
+            } else {
+                message.error('下载文件失败: ' + (error.response?.data?.message || error.message));
+            }
         }
     };
 
-    // 处理文件删除
-    const handleDelete = (record) => {
+    // 处理文件移出
+    const handleMoveOut = (record) => {
         Modal.confirm({
-            title: '确认删除',
-            content: `确定要永久删除${record.isFolder ? '文件夹' : '文件'} "${record.name}" 吗？此操作不可恢复！`,
-            okText: '删除',
-            okType: 'danger',
+            title: '确认移出',
+            content: `确定要将${record.isFolder ? '文件夹' : '文件'} "${record.name}" 移出保险柜吗？`,
+            okText: '移出',
             onOk: async () => {
                 try {
-                    const response = await deleteSafeFile(record.key);
+                    const response = await moveFromSafe(record.key);
                     if (response.data.code === 200) {
+                        // 从当前列表中移除该文件
                         setCurrentFiles(prev => prev.filter(f => f.key !== record.key));
-                        message.success('删除成功');
+                        message.success('已成功移出保险柜');
                     } else {
-                        message.error(response.data.message || '删除失败');
+                        // 检查是否是因为令牌过期或无效
+                        if (response.data.code === 401 || response.data.message?.includes('令牌') || response.data.message?.includes('token')) {
+                            setIsVerified(false);
+                            message.warning('验证已过期，请重新验证');
+                        } else {
+                            message.error(response.data.message || '移出失败');
+                        }
                     }
                 } catch (error) {
-                    console.error('删除失败:', error);
-                    message.error('删除失败');
+                    console.error('移出失败:', error);
+                    
+                    // 更细致的错误处理
+                    if (error.response) {
+                        if (error.response.status === 401 || error.response.status === 403) {
+                            // 检查令牌是否依然有效（可能是其他认证问题）
+                            if (!is2FATokenValid()) {
+                                setIsVerified(false);
+                                message.warning('验证已过期，请重新验证');
+                            } else {
+                                message.error('操作未授权，请稍后重试');
+                            }
+                        } else {
+                            message.error(error.response.data?.message || '移出失败');
+                        }
+                    } else {
+                        message.error('移出失败，请检查网络连接');
+                    }
                 }
             },
         });
@@ -229,11 +308,10 @@ const SafesContent = () => {
                             </>
                         )}
                         <Button
-                            icon={<DeleteOutlined />}
-                            danger
+                            icon={<UnlockOutlined />}
                             onClick={(e) => {
                                 e.stopPropagation();
-                                handleDelete(record);
+                                handleMoveOut(record);
                             }}
                         />
                     </Space>
@@ -270,6 +348,18 @@ const SafesContent = () => {
         setCurrentFolderId(folder.key);
     };
 
+    // 修改渲染逻辑，先判断验证状态，再判断加载状态
+    
+    // 如果未开启两步验证，显示绑定组件
+    if (!userInfo.userSetting?.twoFactorStatus) {
+        return <NotOpenTwoFactor />;
+    }
+
+    // 如果未通过两步验证，显示验证组件
+    if (!isVerified) {
+        return <VerifyComponent onSuccess={() => setIsVerified(true)} />;
+    }
+
     return (
         <div style={{ padding: "24px", position: "relative", minHeight: "calc(100vh - 184px)" }}>
             {/* 面包屑导航 */}
@@ -297,13 +387,6 @@ const SafesContent = () => {
                         刷新
                     </Button>
                 </Space>
-
-                <Button
-                    icon={<FolderAddOutlined />}
-                    onClick={handleNewFolder}
-                >
-                    新建文件夹
-                </Button>
             </div>
 
             {/* 文件列表 */}

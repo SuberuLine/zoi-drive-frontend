@@ -29,12 +29,13 @@ import {
     LockOutlined,
     ShareAltOutlined,
 } from "@ant-design/icons";
-import { getUserFileList, moveFile, createNewFolder, deleteFile, deleteFolder, magnetDownload, offlineDownload, getDownloadLink, renameFile } from "@/api";
+import { getUserFileList, moveFile, createNewFolder, deleteFile, deleteFolder, magnetDownload, offlineDownload, getDownloadLink, renameFile, moveToSafe, is2FATokenValid } from "@/api";
 import {formatDate} from "@/utils/formatter";
 import UploadModal from "@/components/file/UploadModal";
 import styles from "@/styles/FileContent.module.css"; 
 import PreviewContainer from '@/components/preview/PreviewContainer';
 import FileActionDock from '@/components/file/FileActionDock';
+import TwoFactorVerify from '@/components/two_factor/TwoFactorVerify';
 
 export default function FileManager() {
 
@@ -955,6 +956,55 @@ export default function FileManager() {
         setIsShareModalVisible(false);
     };
 
+    // 添加检查是否包含文件夹的函数
+    const hasSelectedFolders = () => {
+        return selectedRows.some(item => item.isFolder);
+    };
+
+    // 修改批量转入保险箱的处理函数
+    const handleBatchMoveToSafe = () => {
+        // 检查是否有选中的文件
+        if (selectedRowKeys.length === 0) {
+            message.warning('请先选择要转入保险箱的文件');
+            return;
+        }
+        
+        // 检查是否选中了文件夹
+        if (hasSelectedFolders()) {
+            message.warning('文件夹不能转入保险箱，请仅选择文件');
+            return;
+        }
+        
+        executeMoveToSafe();
+    };
+
+    // 执行转入保险箱的实际操作
+    const executeMoveToSafe = async () => {
+        try {
+            // 获取所有选中的文件ID
+            const fileIds = selectedRows.map(file => file.key);
+            
+            // 调用API将文件转入保险箱
+            const response = await moveToSafe(fileIds);
+            
+            if (response.data.code === 200) {
+                // 从当前文件列表中移除已转入保险箱的文件
+                setCurrentFiles(prev => prev.filter(f => !selectedRowKeys.includes(f.key)));
+                
+                // 清除选择状态
+                setSelectedRowKeys([]);
+                setSelectedRows([]);
+                
+                message.success(`已成功将 ${fileIds.length} 个文件转入保险箱`);
+            } else {
+                message.error(response.data.message || '转入保险箱失败');
+            }
+        } catch (error) {
+            console.error('转入保险箱失败:', error);
+            message.error('转入保险箱失败');
+        }
+    };
+
     return (
         <div style={{ padding: "24px", position: "relative", minHeight: "calc(100vh - 184px)" }}>
             {/* 面包屑导航 */}
@@ -1041,6 +1091,8 @@ export default function FileManager() {
                     onMove={handleBatchMove}
                     onDelete={handleBatchDelete}
                     onDownload={handleBatchDownload}
+                    onMoveToSafe={handleBatchMoveToSafe}
+                    disableMoveToSafe={hasSelectedFolders()}
                     onCancel={handleBatchCancel}
                 />
             )}

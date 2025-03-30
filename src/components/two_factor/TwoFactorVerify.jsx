@@ -19,6 +19,14 @@ export default function TwoFactorVerify({ onSuccess }) {
         try {
             const res = await twoFactorValidate(verificationCode);
             if (res.data.code === 200) {
+                if (res.data.data) {
+                    const tokenData = {
+                        token: res.data.data,
+                        timestamp: Date.now()
+                    };
+                    localStorage.setItem('2fa_temp_token', JSON.stringify(tokenData));
+                }
+                
                 message.success('验证成功');
                 if (onSuccess) {
                     onSuccess();

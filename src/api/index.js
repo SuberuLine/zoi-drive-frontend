@@ -13,6 +13,41 @@ instance.interceptors.request.use((config) => {
     return config;
 });
 
+// 检查2FA令牌是否有效（5分钟内）
+export function is2FATokenValid() {
+    try {
+        const tokenDataStr = localStorage.getItem('2fa_temp_token');
+        if (!tokenDataStr) return false;
+        
+        const tokenData = JSON.parse(tokenDataStr);
+        const tokenTimestamp = tokenData.timestamp;
+        const currentTime = Date.now();
+        
+        // 检查是否在5分钟内（5分钟 = 300000毫秒）
+        const isValid = currentTime - tokenTimestamp < 300000;
+
+        console.log("is2FATokenValid:", isValid);
+        
+        return isValid;
+    } catch (error) {
+        console.error('检查2FA令牌时出错:', error);
+        return false;
+    }
+}
+
+// 获取有效的2FA令牌
+export function getValid2FAToken() {
+    if (!is2FATokenValid()) return null;
+    
+    try {
+        const tokenDataStr = localStorage.getItem('2fa_temp_token');
+        const tokenData = JSON.parse(tokenDataStr);
+        return tokenData.token;
+    } catch (error) {
+        return null;
+    }
+}
+
 export const checkLogin = async () => {
     try {
         const result = await instance.get("/user/check");
@@ -295,15 +330,7 @@ export const deleteAllRecycleFiles = () => {
 
 // 获取保险箱文件列表
 export const getSafesList = () => {
-    return instance.get('/safes/list');
-};
-
-// 创建保险箱文件夹
-export const createNewSafeFolder = (parentId, name) => {
-    return instance.post('/safes/folder', {
-        parentId,
-        name
-    });
+    return instance.get('/safes/list?token=' + getValid2FAToken());
 };
 
 // 删除保险箱文件
@@ -313,7 +340,7 @@ export const deleteSafeFile = (fileId) => {
 
 // 获取保险箱文件下载链接
 export const getSafeDownloadLink = (fileId) => {
-    return instance.get(`/safes/${fileId}/download`);
+    return instance.get(`/safes/${fileId}/download?token=` + getValid2FAToken());
 };
 
 // 移动文件到保险箱（从普通文件区加密到保险箱）
@@ -325,9 +352,7 @@ export const moveToSafe = (fileIds) => {
 
 // 从保险箱移出（解密）
 export const moveFromSafe = (fileIds) => {
-    return instance.post('/safes/decrypt', {
-        fileIds: Array.isArray(fileIds) ? fileIds : [fileIds]
-    });
+    return instance.get('/safes/decrypt?fileId=' + fileIds + '&token=' + getValid2FAToken());
 };
 
 // 获取我的分享列表
