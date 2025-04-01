@@ -417,4 +417,26 @@ export const getShareDownloadLink = (shareCode) => {
     return instance.post(`/shares/download/${shareCode}`);
 };
 
+// 获取下载任务列表
+export const getDownloadTasks = async () => {
+    try {
+        const response = await instance.get('/downloadTask/progress');
+        return response.data;
+    } catch (error) {
+        console.error('获取下载任务列表失败:', error);
+        throw error;
+    }
+};
+
+// 清空下载任务记录
+export const clearDownloadTasks = async () => {
+    try {
+        const response = await instance.delete('/downloadTask/clear');
+        return response.data;
+    } catch (error) {
+        console.error('清空下载任务记录失败:', error);
+        throw error;
+    }
+};
+
 export default instance;
