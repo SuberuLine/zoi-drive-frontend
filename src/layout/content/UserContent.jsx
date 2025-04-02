@@ -88,7 +88,7 @@ function PersonalPage() {
                                     icon={<SettingOutlined />}
                                     onClick={() => navigate("/home/usersettings")}
                                 >
-                                    Edit Profile
+                                    修改资料
                                 </Button>
                             </div>
                         </Card>
@@ -122,14 +122,14 @@ function PersonalPage() {
                         </Card>
                     </Col>
                     <Col span={16}>
-                        <Card title="Storage Usage">
+                        <Card title="存储使用情况">
                             <Row gutter={16}>
                                 <Col span={18} className="mt-4">
                                     <SpaceProgress used={user.usedSpace} total={user.totalSpace} showInfo={false} />
                                 </Col>
                                 <Col span={6}>
                                     <Statistic
-                                        title="Used Space"
+                                        title="已使用空间"
                                         value={`${(user.usedSpace / (1024 * 1024 * 1024)).toFixed(2)}GB / ${(user.totalSpace / (1024 * 1024 * 1024)).toFixed(2)}GB`}
                                     />
                                 </Col>
@@ -139,7 +139,7 @@ function PersonalPage() {
                             <Col span={12}>
                                 <Card>
                                     <Statistic
-                                        title="Total Files"
+                                        title="总文件数"
                                         value={user.totalFiles}
                                         prefix={<FileOutlined />}
                                     />
@@ -148,7 +148,7 @@ function PersonalPage() {
                             <Col span={12}>
                                 <Card>
                                     <Statistic
-                                        title="Member Since"
+                                        title="注册时间"
                                         value={userInfo.registerTime}
                                         prefix={<UserOutlined />}
                                     />
@@ -156,7 +156,7 @@ function PersonalPage() {
                             </Col>
                         </Row>
                         <Card
-                            title="Recent Activities"
+                            title="最近活动"
                             style={{ marginTop: 16 }}
                         >
                             <List
@@ -184,28 +184,28 @@ function PersonalPage() {
                 <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
                     <Col span={24}>
                         <Card
-                            title="Account Security"
-                            extra={<a href="#">Manage</a>}
+                            title="账户安全"
+                            extra={<a href="#">管理</a>}
                         >
                             <Row gutter={16}>
                                 <Col span={8}>
                                     <Statistic
-                                        title="Password Strength"
-                                        value="Strong"
+                                        title="密码强度"
+                                        value="强"
                                         prefix={<LockOutlined />}
                                     />
                                 </Col>
                                 <Col span={8}>
                                     <Statistic
-                                        title="Two-Factor Auth"
+                                        title="两步验证"
                                         value={userInfo.userSetting.twoFactorStatus}
                                         prefix={<CheckCircleOutlined />}
                                     />
                                 </Col>
                                 <Col span={8}>
                                     <Statistic
-                                        title="Last Login"
-                                        value="2023-05-20 14:30"
+                                        title="最近登录"
+                                        value={userInfo.lastLogin}
                                         prefix={<ClockCircleOutlined />}
                                     />
                                 </Col>

@@ -439,4 +439,37 @@ export const clearDownloadTasks = async () => {
     }
 };
 
+// 获取文件统计信息
+export const getFileStats = async () => {
+    try {
+        const response = await instance.get('/statistical/file_stats');
+        return response.data;
+    } catch (error) {
+        console.error('获取文件统计信息失败:', error);
+        throw error;
+    }
+};
+
+// 获取最近查看的文件
+export const getRecentViews = async () => {
+    try {
+        const response = await instance.get('/statistical/recent_view');
+        return response.data;
+    } catch (error) {
+        console.error('获取最近查看文件失败:', error);
+        throw error;
+    }
+};
+
+// 获取最近保存的文件
+export const getRecentSaved = async () => {
+    try {
+        const response = await instance.get('/statistical/recent_saved');
+        return response.data;
+    } catch (error) {
+        console.error('获取最近保存文件失败:', error);
+        throw error;
+    }
+};
+
 export default instance;
