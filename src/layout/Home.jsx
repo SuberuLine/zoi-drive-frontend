@@ -351,7 +351,7 @@ const Home = () => {
                                     placement="bottomRight"
                                 >
                                     <Space>
-                                        {userInfo.avatar ? <Avatar src={`${import.meta.env.VITE_API_URL}${userInfo.avatar}`} /> : 
+                                        {userInfo.avatar ? <Avatar src={`${userInfo.avatar}`} /> : 
                                         <Avatar icon={<UserOutlined />} />}
                                         {userInfo.username
                                             ? userInfo?.username

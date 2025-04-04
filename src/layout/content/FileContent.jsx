@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Table, Space, Button, Breadcrumb, message, Modal, Input, Dropdown, Tree, Checkbox } from "antd";
+import { Table, Space, Button, Breadcrumb, message, Modal, Input, Dropdown, Tree, Checkbox, Typography, Tag } from "antd";
 import {
     FileOutlined,
     FolderOutlined,
@@ -29,7 +29,7 @@ import {
     LockOutlined,
     ShareAltOutlined,
 } from "@ant-design/icons";
-import { getUserFileList, moveFile, createNewFolder, deleteFile, deleteFolder, magnetDownload, offlineDownload, getDownloadLink, renameFile, moveToSafe, is2FATokenValid } from "@/api";
+import { getUserFileList, moveFile, createNewFolder, deleteFile, deleteFolder, magnetDownload, offlineDownload, getDownloadLink, renameFile, moveToSafe, is2FATokenValid, createShare } from "@/api";
 import {formatDate} from "@/utils/formatter";
 import UploadModal from "@/components/file/UploadModal";
 import styles from "@/styles/FileContent.module.css"; 
@@ -66,6 +66,11 @@ export default function FileManager() {
     const [selectedRows, setSelectedRows] = useState([]);
     const [isShareModalVisible, setIsShareModalVisible] = useState(false);
     const [fileToShare, setFileToShare] = useState(null);
+    const [shareTitle, setShareTitle] = useState("");
+    const [shareDescription, setShareDescription] = useState("");
+    const [sharePassword, setSharePassword] = useState("");
+    const [expireDays, setExpireDays] = useState(7);
+    const [creating, setCreating] = useState(false);
 
     // 初始化：获取文件列表
     useEffect(() => {
@@ -596,7 +601,10 @@ export default function FileManager() {
             key: 'share',
             icon: <ShareAltOutlined />,
             label: '分享文件',
-            onClick: () => handleShare(record)
+            onClick: (e) => {
+                e.domEvent.stopPropagation();
+                handleShare(record);
+            },
         },
         {
             key: 'divider-2',
@@ -953,7 +961,7 @@ export default function FileManager() {
 
     // 关闭分享模态框
     const handleShareModalClose = () => {
-        setIsShareModalVisible(false);
+        resetShareForm();
     };
 
     // 添加检查是否包含文件夹的函数
@@ -976,6 +984,40 @@ export default function FileManager() {
         }
         
         executeMoveToSafe();
+    };
+
+    const handleLock = async (file) => {
+        try {
+            // 锁定文件实际上是移动到保险箱的功能
+            const response = await moveToSafe([file.key]);
+            
+            if (response.data.code === 200) {
+                // 从当前文件列表中移除已锁定的文件
+                setCurrentFiles(prev => prev.filter(f => f.key !== file.key));
+                message.success('文件已成功锁定到保险箱');
+            } else {
+                message.error(response.data.message || '锁定文件失败');
+            }
+        } catch (error) {
+            console.error('锁定文件失败:', error);
+            
+            // 检查是否是2FA未验证的错误
+            if (error.response?.data?.code === 40002) {
+                // 显示2FA验证对话框
+                Modal.confirm({
+                    title: '需要两步验证',
+                    content: (
+                        <div>
+                            <p>锁定文件需要两步验证，请先完成验证</p>
+                            <TwoFactorVerify onSuccess={() => handleLock(file)} />
+                        </div>
+                    ),
+                    footer: null,
+                });
+            } else {
+                message.error('锁定文件失败: ' + (error.message || '未知错误'));
+            }
+        }
     };
 
     // 执行转入保险箱的实际操作
@@ -1003,6 +1045,84 @@ export default function FileManager() {
             console.error('转入保险箱失败:', error);
             message.error('转入保险箱失败');
         }
+    };
+
+    // 实现创建分享功能
+    const handleCreateShare = async () => {
+        if (!shareTitle) {
+            message.warning('请输入分享标题');
+            return;
+        }
+        
+        const fileIds = selectedRows.filter(item => !item.isFolder).map(item => item.key);
+        const folderIds = selectedRows.filter(item => item.isFolder).map(item => item.key);
+
+        if (fileIds.length === 0 && folderIds.length === 0) {
+            message.warning('请选择要分享的文件或文件夹');
+            return;
+        }
+
+        // 构建分享请求对象
+        const shareRequest = {
+            fileIds,
+            folderIds,
+            title: shareTitle,
+            description: shareDescription,
+            password: sharePassword || undefined,
+            expireTime: expireDays > 0 ? new Date(Date.now() + expireDays * 24 * 60 * 60 * 1000) : undefined
+        };
+
+        setCreating(true);
+        try {
+            const response = await createShare(shareRequest);
+            if (response.code === 200) {
+                const shareCode = response.data;
+                const shareUrl = `${window.location.origin}/s/${shareCode}`;
+                
+                // 尝试复制链接到剪贴板
+                navigator.clipboard.writeText(shareUrl)
+                    .then(() => {
+                        message.success("创建分享成功，链接已复制到剪贴板");
+                    })
+                    .catch(() => {
+                        // 如果剪贴板API不可用，显示链接供用户手动复制
+                        Modal.success({
+                            title: "创建分享成功",
+                            content: (
+                                <div>
+                                    <p>分享链接：</p>
+                                    <Input.TextArea 
+                                        value={shareUrl} 
+                                        readOnly 
+                                        autoSize 
+                                        style={{ marginBottom: 16 }}
+                                    />
+                                    <p>请手动复制分享链接</p>
+                                </div>
+                            )
+                        });
+                    });
+                
+                // 关闭分享模态框并重置表单
+                resetShareForm();
+            } else {
+                message.error(response.message || "创建分享失败");
+            }
+        } catch (error) {
+            console.error("创建分享失败:", error);
+            message.error("创建分享失败: " + (error.message || "未知错误"));
+        } finally {
+            setCreating(false);
+        }
+    };
+
+    // 重置分享表单
+    const resetShareForm = () => {
+        setShareTitle("");
+        setShareDescription("");
+        setSharePassword("");
+        setExpireDays(7);
+        setIsShareModalVisible(false);
     };
 
     return (
@@ -1204,6 +1324,62 @@ export default function FileManager() {
                 onDownload={handleDownload}
                 onGetLink={handleGetLink}
             />
+
+            {/* 分享文件模态框 */}
+            <Modal
+                title="创建文件分享"
+                open={isShareModalVisible}
+                onOk={handleCreateShare}
+                onCancel={handleShareModalClose}
+                okText="创建分享"
+                cancelText="取消"
+                confirmLoading={creating}
+            >
+                <Space direction="vertical" style={{ width: '100%' }}>
+                    <Input 
+                        placeholder="分享标题" 
+                        value={shareTitle}
+                        onChange={(e) => setShareTitle(e.target.value)}
+                        prefix={<ShareAltOutlined />}
+                        required
+                    />
+                    <Input.TextArea 
+                        placeholder="分享描述(可选)" 
+                        value={shareDescription}
+                        onChange={(e) => setShareDescription(e.target.value)}
+                        rows={3}
+                    />
+                    <Input 
+                        placeholder="访问密码(可选)" 
+                        value={sharePassword}
+                        onChange={(e) => setSharePassword(e.target.value)}
+                        prefix={<LockOutlined />}
+                    />
+                    <Space>
+                        <Typography.Text>有效期：</Typography.Text>
+                        <Input 
+                            type="number" 
+                            style={{ width: 120 }} 
+                            value={expireDays}
+                            onChange={(e) => setExpireDays(parseInt(e.target.value) || 0)}
+                            suffix="天"
+                            min={0}
+                        />
+                        <Typography.Text type="secondary">0表示永不过期</Typography.Text>
+                    </Space>
+                    
+                    <div style={{ marginTop: 16 }}>
+                        <Typography.Text strong>已选择 {selectedRows.length} 个项目进行分享：</Typography.Text>
+                        <div style={{ marginTop: 8, maxHeight: 100, overflow: 'auto' }}>
+                            {selectedRows.map(item => (
+                                <Tag key={item.key}>
+                                    {item.isFolder ? <FolderOutlined /> : <FileOutlined />} {item.name || item.filename}
+                                </Tag>
+                            ))}
+                        </div>
+                    </div>
+                </Space>
+            </Modal>
         </div>
     );
 }

@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const instance = axios.create({
-    baseURL: import.meta.env.VITE_API_URL + "/api",
+    baseURL: "/api",
     timeout: 10000,
 });
 
@@ -355,68 +355,6 @@ export const moveFromSafe = (fileIds) => {
     return instance.get('/safes/decrypt?fileId=' + fileIds + '&token=' + getValid2FAToken());
 };
 
-// 获取我的分享列表
-export const getMyShares = () => {
-    return instance.get('/shares/my');
-};
-
-// 获取他人分享列表
-export const getOthersShares = () => {
-    return instance.get('/shares/others');
-};
-
-// 取消分享
-export const cancelShare = (shareId) => {
-    return instance.delete(`/shares/${shareId}`);
-};
-
-// 延长分享时间
-export const extendShareTime = (shareId, days) => {
-    return instance.put(`/shares/${shareId}/extend`, {
-        days: days
-    });
-};
-
-// 创建分享
-export const createShare = (shareData) => {
-    return instance.post('/shares/create', shareData);
-};
-
-// 获取分享详情
-export const getShareDetail = (shareCode) => {
-    return instance.get(`/shares/detail/${shareCode}`);
-};
-
-// 验证分享密码
-export const verifySharePassword = (shareCode, password) => {
-    return instance.post(`/shares/verify/${shareCode}`, {
-        password
-    });
-};
-
-// 记录分享访问
-export const recordShareVisit = (shareCode) => {
-    return instance.post(`/shares/visit/${shareCode}`);
-};
-
-// 记录分享下载
-export const recordShareDownload = (shareCode) => {
-    return instance.post(`/shares/download/${shareCode}`);
-};
-
-// 保存分享文件到我的网盘
-export const saveToMyDrive = (fileId, shareCode) => {
-    return instance.post('/shares/save', {
-        fileId,
-        shareCode
-    });
-};
-
-// 获取分享文件下载链接
-export const getShareDownloadLink = (shareCode) => {
-    return instance.post(`/shares/download/${shareCode}`);
-};
-
 // 获取下载任务列表
 export const getDownloadTasks = async () => {
     try {
@@ -470,6 +408,110 @@ export const getRecentSaved = async () => {
         console.error('获取最近保存文件失败:', error);
         throw error;
     }
+};
+
+// 创建文件分享
+export const createShare = async (shareRequest) => {
+    try {
+        const response = await instance.post('/share/create', shareRequest);
+        return response.data;
+    } catch (error) {
+        console.error('创建分享失败:', error);
+        throw error;
+    }
+};
+
+// 验证分享密码
+export const verifySharePassword = async (verifyRequest) => {
+    try {
+        const response = await instance.post('/share/verify', verifyRequest);
+        return response.data;
+    } catch (error) {
+        console.error('验证分享密码失败:', error);
+        throw error;
+    }
+};
+
+// 获取分享信息
+export const getShareInfo = async (shareCode) => {
+    try {
+        const response = await instance.get(`/share/info/${shareCode}`);
+        return response.data;
+    } catch (error) {
+        console.error('获取分享信息失败:', error);
+        throw error;
+    }
+};
+
+// 获取分享内容
+export const getShareContent = async (shareCode, password) => {
+    try {
+        const url = `/share/content/${shareCode}${password ? `?password=${encodeURIComponent(password)}` : ''}`;
+        const response = await instance.get(url);
+        return response.data;
+    } catch (error) {
+        console.error('获取分享内容失败:', error);
+        throw error;
+    }
+};
+
+// 保存分享文件到个人网盘
+export const saveShareFiles = async (saveRequest) => {
+    try {
+        const response = await instance.post('/share/save', saveRequest);
+        return response.data;
+    } catch (error) {
+        console.error('保存分享文件失败:', error);
+        throw error;
+    }
+};
+
+// 获取用户创建的分享列表
+export const getUserShares = async (pageNum = 1, pageSize = 10) => {
+    try {
+        const response = await instance.get(`/share/my/created?pageNum=${pageNum}&pageSize=${pageSize}`);
+        return response.data;
+    } catch (error) {
+        console.error('获取用户分享列表失败:', error);
+        throw error;
+    }
+};
+
+// 获取用户保存的分享列表
+export const getUserSavedShares = async (pageNum = 1, pageSize = 10) => {
+    try {
+        const response = await instance.get(`/share/my/saved?pageNum=${pageNum}&pageSize=${pageSize}`);
+        return response.data;
+    } catch (error) {
+        console.error('获取用户保存的分享列表失败:', error);
+        throw error;
+    }
+};
+
+// 取消分享
+export const cancelShare = async (shareId) => {
+    try {
+        const response = await instance.post(`/share/cancel/${shareId}`);
+        return response.data;
+    } catch (error) {
+        console.error('取消分享失败:', error);
+        throw error;
+    }
+};
+
+// 延长分享有效期
+export const extendShareExpiration = async (shareId, days) => {
+    try {
+        const response = await instance.post(`/share/extend/${shareId}?days=${days}`);
+        return response.data;
+    } catch (error) {
+        console.error('延长分享有效期失败:', error);
+        throw error;
+    }
+};
+
+export const downloadShareFile = (shareCode, fileId, password) => {
+    return `/api/share/download/${shareCode}/${fileId}${password ? `?password=${encodeURIComponent(password)}` : ''}`;
 };
 
 export default instance;

@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { QrcodeOutlined } from "@ant-design/icons";
 import { login } from "@/api";
+import { useNavigate } from "react-router-dom";
 
 const LoginForm = ({ toggleView, showQRCodeModal, messageApi }) => {
+    const navigate = useNavigate();
     const [loginForm, setLoginForm] = useState({
         account: "",
         password: "",
@@ -35,7 +37,7 @@ const LoginForm = ({ toggleView, showQRCodeModal, messageApi }) => {
                     content: '登录成功',
                 });
                 setTimeout(() => {
-                    window.location.href = "/home";
+                    navigate('/home');
                 }, 1000);
             } else if (res.data.code >= 400) {
                 messageApi.open({

@@ -18,6 +18,7 @@ import SafesContent from "@/layout/content/SafesContent";
 import UserContent from "@/layout/content/UserContent";
 import UserSettings from "@/layout/content/UserSettings";
 import ShareContent from "@/layout/content/ShareContent";
+import SharePage from "@/components/share/SharePage";
 
 const router = createBrowserRouter([
     {
@@ -35,6 +36,10 @@ const router = createBrowserRouter([
     {
         path: "/reset_password",
         element: <ResetPassword />,
+    },
+    {
+        path: "/s/:shareCode",
+        element: <SharePage />,
     },
     {
         path: "/home",
